@@ -63,7 +63,7 @@ const cardList: Card[] = [
         file: "og-coderabbit.png",
         eyebrow: "Alternatives",
         titleLineList: [[{ text: "Proval vs\u00A0" }, { text: "CodeRabbit", accent: true }]],
-        sub: "Self-hosted AI code review with your own model on your infrastructure.",
+        sub: "Open source CodeRabbit alternative you self host with your own model.",
     },
     {
         file: "og-qodo.png",

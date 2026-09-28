@@ -133,6 +133,25 @@
     </Container>
 </section>
 
+{#if competitor.sectionList?.length}
+    {#each competitor.sectionList as section, index (section.heading)}
+        <section
+            class="border-t border-neutral-200/80 py-16 md:py-20 {index % 2 === 0
+                ? 'bg-neutral-50/40'
+                : ''}"
+            aria-labelledby="content-section-{index}">
+            <Container>
+                <h2
+                    id="content-section-{index}"
+                    class="text-3xl font-semibold tracking-[-0.035em] text-neutral-950 md:text-4xl">
+                    {section.heading}
+                </h2>
+                <p class="mt-5 max-w-3xl text-base leading-7 text-neutral-600">{section.body}</p>
+            </Container>
+        </section>
+    {/each}
+{/if}
+
 <section class="border-t border-neutral-200/80 bg-neutral-50/40 py-16 md:py-20" aria-labelledby="verdict-heading">
     <Container>
         <Eyebrow>Verdict</Eyebrow>
@@ -142,6 +161,30 @@
         <p class="mt-5 max-w-3xl text-base leading-7 text-neutral-600">{competitor.verdict}</p>
     </Container>
 </section>
+
+{#if competitor.faqList?.length}
+    <section class="border-t border-neutral-200/80 py-16 md:py-20" aria-labelledby="alternative-faq-heading">
+        <Container>
+            <Eyebrow>FAQ</Eyebrow>
+            <h2
+                id="alternative-faq-heading"
+                class="mt-3 text-3xl font-semibold tracking-[-0.035em] text-neutral-950 md:text-4xl">
+                Common questions
+            </h2>
+
+            <Panel class="mt-8 !p-0">
+                <div class="divide-y divide-neutral-200/80">
+                    {#each competitor.faqList as faq (faq.question)}
+                        <div class="px-5 py-6 md:px-6">
+                            <h3 class="font-semibold tracking-tight text-neutral-950">{faq.question}</h3>
+                            <p class="mt-2 text-sm leading-6 text-neutral-600">{faq.answer}</p>
+                        </div>
+                    {/each}
+                </div>
+            </Panel>
+        </Container>
+    </section>
+{/if}
 
 <section class="border-t border-neutral-200/80 bg-neutral-50 py-16 md:py-20" aria-labelledby="cta-heading">
     <Container>

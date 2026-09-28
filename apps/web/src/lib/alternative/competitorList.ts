@@ -10,6 +10,16 @@ export type CapabilityRow = {
     proval: boolean;
 };
 
+export type ContentSection = {
+    heading: string;
+    body: string;
+};
+
+export type FaqItem = {
+    question: string;
+    answer: string;
+};
+
 export type Competitor = {
     slug: string;
     name: string;
@@ -22,6 +32,8 @@ export type Competitor = {
     ogImagePath: string;
     featureRowList: FeatureRow[];
     capabilityRowList: CapabilityRow[];
+    sectionList?: ContentSection[];
+    faqList?: FaqItem[];
 };
 
 export const COMPETITOR_LIST: Competitor[] = [
@@ -29,13 +41,44 @@ export const COMPETITOR_LIST: Competitor[] = [
         slug: "coderabbit",
         name: "CodeRabbit",
         targetKeyword: "coderabbit alternative",
-        title: "CodeRabbit Alternative | Proval",
-        description: "CodeRabbit alternative for self-hosted AI code review, local LLMs, Forgejo, and open source.",
-        heroLead: "Looking for a CodeRabbit alternative?",
-        intro: "CodeRabbit is a strong SaaS review bot with deep GitHub and GitLab coverage. Teams that need self-host without an Enterprise deal, Forgejo support, or a local model endpoint often look for a CodeRabbit alternative they can run on their own network.",
+        title: "Open Source CodeRabbit Alternative | Proval",
+        description:
+            "CodeRabbit alternative you self host. CodeRabbit alternatives open source, with your own model on GitHub, GitLab, and Forgejo.",
+        heroLead: "CodeRabbit alternative",
+        intro:
+            "Proval is an open source, self-hosted CodeRabbit alternative for AI pull request review on your own network. CodeRabbit is a strong SaaS review bot with deep GitHub and GitLab coverage. Teams that need self-host without an Enterprise deal, Forgejo support, or a local model endpoint often compare options before they commit to seat based SaaS.",
         verdict:
             "Choose Proval when you want open source self-hosted review with Your Own Model. Stay with CodeRabbit when you prefer a managed SaaS suite with seat based pricing and IDE autofix workflows.",
         ogImagePath: "/og-coderabbit.png",
+        sectionList: [
+            {
+                heading: "CodeRabbit alternatives open source",
+                body:
+                    "Proval is open source software you deploy with Docker on infrastructure you control. Review traffic stays on your network and you point the agent at your own API or a local model such as Ollama or llama.cpp. You get webhook driven pull request review, inline comments, and threaded replies on GitHub, GitLab, and Forgejo without a per seat license for the review service itself.",
+            },
+        ],
+        faqList: [
+            {
+                question: "Is Proval a CodeRabbit alternative?",
+                answer:
+                    "Yes. Proval is a self-hosted CodeRabbit alternative focused on pull request review, replies, and issue comments. You run it on your stack and bring your own model instead of paying for CodeRabbit seats and their managed AI stack.",
+            },
+            {
+                question: "What are CodeRabbit alternatives open source?",
+                answer:
+                    "Teams often look for CodeRabbit alternatives open source when they want the review bot under their control. Proval is one option. It is open source, self-hosted, and connects to GitHub, GitLab, and Forgejo with your own LLM endpoint.",
+            },
+            {
+                question: "Can I self-host without a CodeRabbit Enterprise deal?",
+                answer:
+                    "CodeRabbit self-host is typically Enterprise only. Proval is built for self-host from day one with docker-compose and runs on your network without a commercial self-host package.",
+            },
+            {
+                question: "Can I use a local model instead of CodeRabbit managed AI?",
+                answer:
+                    "Yes. Proval accepts any OpenAI compatible Chat Completions endpoint, including Ollama, llama.cpp, and internal gateways. CodeRabbit Pro relies on their managed models rather than a local endpoint on standard plans.",
+            },
+        ],
         featureRowList: [
             { label: "Pricing", competitor: "From ~$24/user/mo (per seat)", proval: "Free + Your Own Model" },
             {
