@@ -13,6 +13,11 @@ export type WebhookIngress = {
     title?: string;
 };
 
+export const logWebhookRequest = createMiddleware(async (c, next) => {
+    log(`[PROVAL:WEBHOOK] ${c.req.raw.url}`);
+    await next();
+});
+
 function parseGitLabWebhook(c: Context): WebhookIngress {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const p = c.get("gitlabPayload") as any;

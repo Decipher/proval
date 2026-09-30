@@ -6,12 +6,13 @@ import { handleGitHubWebhook } from "./github/github.controller.js";
 import { parseForgejoWebhook, verifyForgejoWebhook } from "./forgejo/forgejo.middleware.js";
 import { handleForgejoWebhook } from "./forgejo/forgejo.controller.js";
 import { loadRepository } from "./load-repository.middleware.js";
-import { logWebhookIngress } from "./webhook.middleware.js";
+import { logWebhookIngress, logWebhookRequest } from "./webhook.middleware.js";
 
 export const webhookRouter = new Hono();
 
 webhookRouter.post(
     "/gitlab",
+    logWebhookRequest,
     parseGitLabWebhook,
     verifyGitLabWebhook,
     loadRepository,
@@ -20,10 +21,11 @@ webhookRouter.post(
 );
 webhookRouter.post(
     "/forgejo",
+    logWebhookRequest,
     parseForgejoWebhook,
     verifyForgejoWebhook,
     loadRepository,
     logWebhookIngress,
     handleForgejoWebhook,
 );
-webhookRouter.post("/github", loadGitHubContext, logWebhookIngress, handleGitHubWebhook);
+webhookRouter.post("/github", logWebhookRequest, loadGitHubContext, logWebhookIngress, handleGitHubWebhook);
