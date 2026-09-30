@@ -114,21 +114,22 @@ export const updateAccessById = async (c: Context) => {
     if (!Number.isFinite(id)) {
         return c.json({ error: "Invalid access configuration id" }, 400);
     }
-    const body = await c.req.json<AccessUpdateInput & { accessToken?: string }>();
-    const { name, baseUrl, accessToken } = body;
-    if (!name) {
-        return c.json({ error: "Name is required" }, 400);
-    }
-    if (!baseUrl) {
-        return c.json({ error: "Base URL is required" }, 400);
-    }
+    const body = await c.req.json<AccessUpdateInput & { accessToken?: string; defaultWebhookSecret?: string }>();
     try {
-        const access = await accessService.updateById(id, name, baseUrl, accessToken);
+        const access = await accessService.updateById(id, body);
         return c.json(access, 200);
     } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("NOT_FOUND") || msg.includes("not found")) {
             return c.json({ error: "Access configuration not found" }, 404);
+        }
+        if (
+            msg.includes("required") ||
+            msg.includes("auto create") ||
+            msg === "Name is required" ||
+            msg === "Base URL is required"
+        ) {
+            return c.json({ error: msg }, 400);
         }
         throw e;
     }

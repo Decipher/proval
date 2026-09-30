@@ -47,7 +47,10 @@ export type RepositoryResponse = Omit<Repository, "webhookSecret" | "accessToken
     lastUsedAt: Date | null;
 };
 export type ModelProviderResponse = Omit<ModelProvider, "apiKey">;
-export type AccessResponse = Omit<Access, "accessToken">;
+export type AccessResponse = Omit<Access, "accessToken" | "defaultWebhookSecret"> & {
+    hasDefaultWebhookSecret: boolean;
+};
+
 export type GitHubAppResponse = Omit<GitHubApp, "privateKey" | "webhookSecret">;
 export type GitHubInstallationResponse = GitHubInstallation & {
     accountName: string;

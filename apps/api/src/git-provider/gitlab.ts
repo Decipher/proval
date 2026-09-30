@@ -560,6 +560,15 @@ export class GitLabProvider implements GitProvider {
         return { username: user.username };
     }
 
+    public async isConnectedAccountProjectMaintainer(): Promise<boolean> {
+        if (!this.projectId) {
+            return false;
+        }
+        const user = await this.gitlab.Users.showCurrentUser();
+        const level = await this.fetchUserPermission({ userId: user.id });
+        return level >= 4;
+    }
+
     public async fetchUserPermission(identity: GitUserPermissionIdentity): Promise<number> {
         if (!("userId" in identity) || identity.userId == null) {
             throw new Error("GitLab fetchUserPermission requires userId");

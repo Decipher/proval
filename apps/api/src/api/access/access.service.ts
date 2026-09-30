@@ -1,34 +1,65 @@
 import { gitProviderAccessTable, repositoryTable } from "@proval/db";
-import type { Access, AccessInsert, AccessProvider, AccessResponse } from "@proval/types";
+import type { Access, AccessInsert, AccessProvider, AccessResponse, AccessUpdateInput } from "@proval/types";
 import db from "../../db";
-import { count, eq } from "drizzle-orm";
+import { count, eq, getTableColumns } from "drizzle-orm";
 import { decrypt, encrypt } from "../../util/encrypt.js";
 
+function isAccessAutoCreateDefaultConfigValueMissing(value: unknown): boolean {
+    if (value === null || value === undefined) {
+        return true;
+    }
+    return typeof value === "string" && !value.trim();
+}
+
+function normalizeAccessBaseUrl(url: string): string {
+    const trimmed = url.trim();
+    if (!trimmed) {
+        return "";
+    }
+    try {
+        const parsed = new URL(trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed);
+        return `${parsed.protocol}//${parsed.host}`.toLowerCase();
+    } catch {
+        return trimmed.replace(/\/$/, "").toLowerCase();
+    }
+}
+
 export class GitLabAccessService {
-    private readonly query = {
-        id: gitProviderAccessTable.id,
-        provider: gitProviderAccessTable.provider,
-        name: gitProviderAccessTable.name,
-        baseUrl: gitProviderAccessTable.baseUrl,
-        createdAt: gitProviderAccessTable.createdAt,
-        updatedAt: gitProviderAccessTable.updatedAt,
-    };
+    public hasAutoCreateDefaultConfig(access: Access): boolean {
+        if (!access.autoCreateEnabled || !access.defaultWebhookSecret?.trim()) {
+            return false;
+        }
+        for (const key of Object.keys(getTableColumns(gitProviderAccessTable))) {
+            if (!key.startsWith("default") || key === "defaultWebhookSecret") {
+                continue;
+            }
+            if (isAccessAutoCreateDefaultConfigValueMissing(access[key as keyof Access])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public toResponse(access: Access): AccessResponse {
-        const { accessToken: _accessToken, ...rest } = access;
-        return rest;
+        const { accessToken: _accessToken, defaultWebhookSecret, ...rest } = access;
+        return {
+            ...rest,
+            hasDefaultWebhookSecret: Boolean(defaultWebhookSecret?.trim()),
+        };
     }
 
     public async findAll(): Promise<AccessResponse[]> {
-        const accessList = await db.select(this.query).from(gitProviderAccessTable);
-        return accessList;
+        const accessList = await db.select().from(gitProviderAccessTable);
+        return accessList.map((access) => this.toResponse(access));
     }
 
     public async findById(id: number): Promise<AccessResponse> {
-        const accessList = await db
-            .select(this.query)
-            .from(gitProviderAccessTable)
-            .where(eq(gitProviderAccessTable.id, id));
+        const access = await this.findByIdRaw(id);
+        return this.toResponse(access);
+    }
+
+    public async findByIdRaw(id: number): Promise<Access> {
+        const accessList = await db.select().from(gitProviderAccessTable).where(eq(gitProviderAccessTable.id, id));
         if (accessList.length === 0) {
             throw new Error("Access configuration not found");
         }
@@ -37,10 +68,30 @@ export class GitLabAccessService {
 
     public async findByProvider(provider: AccessProvider): Promise<AccessResponse[]> {
         const accessList = await db
-            .select(this.query)
+            .select()
             .from(gitProviderAccessTable)
             .where(eq(gitProviderAccessTable.provider, provider));
-        return accessList;
+        return accessList.map((access) => this.toResponse(access));
+    }
+
+    public async findForAutoCreate(provider: AccessProvider, instanceBaseUrl: string): Promise<Access | null> {
+        const normalized = normalizeAccessBaseUrl(instanceBaseUrl);
+        if (!normalized) {
+            return null;
+        }
+        const accessList = await db
+            .select()
+            .from(gitProviderAccessTable)
+            .where(eq(gitProviderAccessTable.provider, provider));
+        for (const access of accessList) {
+            if (!this.hasAutoCreateDefaultConfig(access)) {
+                continue;
+            }
+            if (normalizeAccessBaseUrl(access.baseUrl) === normalized) {
+                return access;
+            }
+        }
+        return null;
     }
 
     public async getAccessToken(id: number) {
@@ -72,27 +123,80 @@ export class GitLabAccessService {
                 baseUrl,
                 accessToken: encrypt(accessToken),
             })
-            .returning(this.query);
-        return newAccess[0];
+            .returning();
+        return this.toResponse(newAccess[0]);
     }
 
-    public async updateById(id: number, name: string, baseUrl: string, accessToken?: string): Promise<AccessResponse> {
-        const patch = {
+    public async updateById(
+        id: number,
+        input: AccessUpdateInput & { accessToken?: string; defaultWebhookSecret?: string },
+    ): Promise<AccessResponse> {
+        const existing = await this.findByIdRaw(id);
+        const name = input.name?.trim();
+        const baseUrl = input.baseUrl?.trim();
+        if (!name) {
+            throw new Error("Name is required");
+        }
+        if (!baseUrl) {
+            throw new Error("Base URL is required");
+        }
+        if (typeof input.autoCreateEnabled !== "boolean") {
+            throw new Error("autoCreateEnabled is required");
+        }
+
+        const patch: Record<string, unknown> = {
             name,
             baseUrl,
-            ...(accessToken !== undefined && accessToken.trim() !== ""
-                ? { accessToken: encrypt(accessToken.trim()) }
-                : {}),
         };
+        if (input.accessToken !== undefined && input.accessToken.trim() !== "") {
+            patch.accessToken = encrypt(input.accessToken.trim());
+        }
+
+        if (!input.autoCreateEnabled) {
+            const clearedDefaultConfigPatch = Object.fromEntries(
+                Object.keys(getTableColumns(gitProviderAccessTable))
+                    .filter((key) => key.startsWith("default"))
+                    .map((key) => [key, null]),
+            );
+            Object.assign(patch, { autoCreateEnabled: false, ...clearedDefaultConfigPatch });
+        } else {
+            const secretInput = input.defaultWebhookSecret?.trim() ?? "";
+            const existingSecret = existing.defaultWebhookSecret ? decrypt(existing.defaultWebhookSecret).trim() : "";
+            const webhookSecret = secretInput || existingSecret;
+            if (!webhookSecret) {
+                throw new Error("Default webhook secret is required when auto create is enabled");
+            }
+            const defaultConfigPolicyPatch: Record<string, unknown> = {};
+            for (const key of Object.keys(getTableColumns(gitProviderAccessTable))) {
+                if (!key.startsWith("default") || key === "defaultWebhookSecret") {
+                    continue;
+                }
+                const value = input[key as keyof typeof input];
+                if (isAccessAutoCreateDefaultConfigValueMissing(value)) {
+                    throw new Error(`${key} is required when auto create is enabled`);
+                }
+                if (typeof value === "string") {
+                    defaultConfigPolicyPatch[key] = value.trim();
+                } else {
+                    defaultConfigPolicyPatch[key] = value;
+                }
+            }
+            Object.assign(patch, {
+                autoCreateEnabled: true,
+                defaultWebhookSecret: encrypt(webhookSecret),
+                ...defaultConfigPolicyPatch,
+            });
+        }
+
         const updatedAccess = await db
             .update(gitProviderAccessTable)
             .set(patch)
             .where(eq(gitProviderAccessTable.id, id))
-            .returning(this.query);
+            .returning();
         if (updatedAccess.length === 0) {
             throw new Error("Access configuration not found");
         }
-        return updatedAccess[0];
+        return this.toResponse(updatedAccess[0]);
     }
 
     public async deleteById(id: number) {

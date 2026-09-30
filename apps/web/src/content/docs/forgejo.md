@@ -18,6 +18,8 @@ Connect Forgejo to Proval with a personal access token, the Proval dashboard for
 
 ## Step 1: Personal access token
 
+Use a dedicated Forgejo user for reviews (for example `proval`) and create the token on that account.
+
 1. Profile → **Settings** → **Applications** → **Generate New Token**
 2. Select **`read_api`** and **`write_repository`**
 
@@ -39,11 +41,22 @@ Connect Forgejo to Proval with a personal access token, the Proval dashboard for
 
 ### Repository
 
+Choose one path.
+
+**Manual (default)**
+
 1. **Repositories** → **Add repository**
 2. Fill in the form
 3. **Create**
 
-Use the same webhook secret in Step 3.
+The connection user must already be a collaborator with **Write** access. Use the same webhook secret in Step 3.
+
+**Automatic registration**
+
+1. On the Forgejo connection card, open the settings (gear) icon and go to **Edit connection**
+2. Turn on **Automatic repository registration**, fill in **Default Config** including the webhook secret, and save
+3. Share the webhook URL and secret with your team. On each repository they add the connection user as a collaborator with **Write** access, then add the repository webhook
+4. On the first pull request, issue, or comment, Proval registers the repository. You do not add each repository in the dashboard first
 
 ## Step 3: Repository webhook
 
@@ -93,7 +106,7 @@ See [Forgejo: webhook config](https://forgejo.org/docs/latest/admin/config-cheat
 ## Troubleshooting
 
 - **401** — secret does not match Proval
-- **404** — repository not registered in Proval
+- **404** — repository not registered in Proval, automatic registration is off, or the connection user is not a collaborator on the repository
 - **Host not allowed** — [Allow internal webhooks](#allow-internal-webhooks)
 - **No review** — Forgejo cannot reach port 7901, or events not enabled
 - **Test connection fails** — invalid token or missing scopes

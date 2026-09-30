@@ -39,11 +39,22 @@ Connect GitLab to Proval with a personal access token, the Proval dashboard form
 
 ### Repository
 
+Choose one path.
+
+**Manual (default)**
+
 1. **Repositories** → **Add repository**
 2. Fill in the form
 3. **Create**
 
-Use the same webhook secret in Step 3.
+The connection account must already be a Maintainer on the project. Use the same webhook secret in Step 3.
+
+**Automatic registration**
+
+1. On the GitLab connection card, open the settings (gear) icon and go to **Edit connection**
+2. Turn on **Automatic repository registration**, fill in **Default Config** including the webhook secret, and save
+3. Share the webhook URL and secret with your team. On each project they add the connection account as a member with **Maintainer** or above, then add the project webhook
+4. On the first merge request, issue, or comment, Proval registers the repository. You do not add each repository in the dashboard first
 
 ## Step 3: Project webhook
 
@@ -82,7 +93,7 @@ See [GitLab: Filtering outbound requests](https://docs.gitlab.com/security/webho
 ## Troubleshooting
 
 - **401** — secret does not match Proval
-- **404** — repository not registered in Proval
+- **404** — repository not registered in Proval, automatic registration is off, or the connection account is not a Maintainer on the project
 - **Blocked / local network** — [Allow internal webhooks](#allow-internal-webhooks)
 - **No review** — GitLab cannot reach port 7901, or events not enabled
 - **Test connection fails** — invalid token, wrong base URL, or missing `api` scope

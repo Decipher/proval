@@ -1,10 +1,13 @@
 <script lang="ts">
     import Button from "$lib/components/atom/Button.svelte";
     import GitProviderIcon from "$lib/components/atom/GitProviderIcon.svelte";
-    import { TrashIcon, PencilIcon } from "phosphor-svelte";
+    import { GearIcon, TrashIcon } from "phosphor-svelte";
     import type { AccessResponse } from "@proval/types";
 
     type TestResult = { id: number; success: boolean; message: string };
+
+    const iconButtonClass =
+        "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700";
 
     let {
         item,
@@ -12,7 +15,6 @@
         isTesting,
         onTest,
         onUpdateToken,
-        onEdit,
         onDelete,
     }: {
         item: AccessResponse;
@@ -20,7 +22,6 @@
         isTesting: boolean;
         onTest: () => void;
         onUpdateToken: () => void;
-        onEdit: () => void;
         onDelete: () => void;
     } = $props();
 </script>
@@ -31,7 +32,7 @@
             <GitProviderIcon provider={item.provider} boxed />
             <div class="min-w-0">
                 <div class="flex items-center gap-2">
-                    <p class="truncate font-medium text-neutral-800">
+                    <p class="truncate font-medium text-neutral-800 dark:text-neutral-100">
                         {item.name}
                     </p>
                 </div>
@@ -40,19 +41,20 @@
                 </p>
             </div>
         </div>
-        <div>
-            <div class="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                <button
-                    class="rounded p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
-                    onclick={onEdit}>
-                    <PencilIcon class="size-4" />
-                </button>
-                <button
-                    class="rounded p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                    onclick={onDelete}>
-                    <TrashIcon class="size-4" />
-                </button>
-            </div>
+        <div class="flex shrink-0 items-center gap-1">
+            <a
+                href="/provider/{item.id}/edit"
+                class={iconButtonClass}
+                aria-label="Connection settings">
+                <GearIcon class="size-4" />
+            </a>
+            <button
+                type="button"
+                class="{iconButtonClass} hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                aria-label="Delete connection"
+                onclick={onDelete}>
+                <TrashIcon class="size-4" />
+            </button>
         </div>
     </div>
     <div class="mt-2 flex justify-end gap-2">

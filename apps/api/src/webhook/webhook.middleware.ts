@@ -85,7 +85,7 @@ function parseGitHubWebhook(c: Context, isForgejo: boolean): WebhookIngress {
     return { webhookEvent, eventType, action, number, title };
 }
 
-/** After `loadGitLabContext`, `loadGitHubContext`, or `loadForgejoContext`. */
+/** After GitLab/Forgejo parse, verify, and loadRepository, or after `loadGitHubContext`. */
 export const logWebhookIngress = createMiddleware(async (c, next) => {
     const repository = c.get("repository") as Repository;
     const modelProvider = c.get("modelProvider") as ModelProvider;
