@@ -5,6 +5,7 @@ import { and, eq, getTableColumns } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 import { RepositoryService } from "../api/repository/repository.service.js";
 import { decrypt } from "../util/encrypt.js";
+import { logError } from "../util/log.js";
 
 export type WebhookRepositoryRow = {
     repository: Repository;
@@ -68,53 +69,58 @@ export const loadRepository = createMiddleware(async (c, next) => {
     }
 
     if (!row && createInput) {
-        const access = createInput.access;
-        const webhookSecret = decrypt(access.defaultWebhookSecret!).trim();
-        const repositoryColumnKeySet = new Set(Object.keys(getTableColumns(repositoryTable)));
-        const defaultConfigPolicy: Record<string, unknown> = {};
-        for (const defaultKey of Object.keys(getTableColumns(gitProviderAccessTable))) {
-            if (!defaultKey.startsWith("default") || defaultKey === "defaultWebhookSecret") {
-                continue;
-            }
-            const rest = defaultKey.slice("default".length);
-            const repositoryKey = rest.charAt(0).toLowerCase() + rest.slice(1);
-            if (!repositoryColumnKeySet.has(repositoryKey)) {
-                continue;
-            }
-            defaultConfigPolicy[repositoryKey] = access[defaultKey as keyof Access];
-        }
-        const insert: RepositoryInsert = {
-            ...defaultConfigPolicy,
-            path: createInput.path,
-            description: createInput.description ?? null,
-            provider: createInput.provider,
-            webhookSecret,
-            gitProviderAccessId: access.id,
-            gitProviderRepositoryId: createInput.gitProviderRepositoryId,
-        };
-
         try {
-            await repositoryService.create(insert);
-        } catch (error) {
-            const existing = await fetchWebhookContextRow(
+            const access = createInput.access;
+            const webhookSecret = decrypt(access.defaultWebhookSecret!).trim();
+            const repositoryColumnKeySet = new Set(Object.keys(getTableColumns(repositoryTable)));
+            const defaultConfigPolicy: Record<string, unknown> = {};
+            for (const defaultKey of Object.keys(getTableColumns(gitProviderAccessTable))) {
+                if (!defaultKey.startsWith("default") || defaultKey === "defaultWebhookSecret") {
+                    continue;
+                }
+                const rest = defaultKey.slice("default".length);
+                const repositoryKey = rest.charAt(0).toLowerCase() + rest.slice(1);
+                if (!repositoryColumnKeySet.has(repositoryKey)) {
+                    continue;
+                }
+                defaultConfigPolicy[repositoryKey] = access[defaultKey as keyof Access];
+            }
+            const insert: RepositoryInsert = {
+                ...defaultConfigPolicy,
+                path: createInput.path,
+                description: createInput.description ?? null,
+                provider: createInput.provider,
+                webhookSecret,
+                gitProviderAccessId: access.id,
+                gitProviderRepositoryId: createInput.gitProviderRepositoryId,
+            };
+
+            try {
+                await repositoryService.create(insert);
+            } catch (error) {
+                const existing = await fetchWebhookContextRow(
+                    createInput.gitProviderRepositoryId,
+                    createInput.provider,
+                    access.id,
+                );
+                if (!existing) {
+                    throw error;
+                }
+            }
+
+            const loaded = await fetchWebhookContextRow(
                 createInput.gitProviderRepositoryId,
                 createInput.provider,
                 access.id,
             );
-            if (!existing) {
-                throw error;
+            if (!loaded) {
+                return c.json({ error: "Repository not found" }, 404);
             }
+            row = loaded;
+        } catch (error) {
+            logError("Auto registration repository create failed", error);
+            return c.json({ error: "Webhook processing failed" }, 503);
         }
-
-        const loaded = await fetchWebhookContextRow(
-            createInput.gitProviderRepositoryId,
-            createInput.provider,
-            access.id,
-        );
-        if (!loaded) {
-            return c.json({ error: "Repository not found" }, 404);
-        }
-        row = loaded;
     }
 
     if (!row) {

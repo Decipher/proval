@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { createMiddleware } from "hono/factory";
 import { decrypt } from "../../util/encrypt.js";
+import { logError } from "../../util/log.js";
 import { GitLabProvider } from "../../git-provider/gitlab.js";
 import { GitLabAccessService } from "../../api/access/access.service.js";
 import { fetchWebhookContextRow, originFromWebhookUrl } from "../load-repository.middleware.js";
@@ -69,34 +70,40 @@ export const verifyGitLabWebhook = createMiddleware(async (c, next) => {
         return c.json({ error: "Repository not found" }, 404);
     }
 
-    const access = await accessService.findForAutoCreate("gitlab", instanceBaseUrl);
-    if (!access) {
-        return c.json({ error: "Repository not found" }, 404);
+    try {
+        const access = await accessService.findForAutoCreate("gitlab", instanceBaseUrl);
+        if (!access) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+
+        const defaultWebhookSecret = decrypt(access.defaultWebhookSecret!).trim();
+        if (!verifyGitlabToken(defaultWebhookSecret, c.req.header("X-Gitlab-Token"))) {
+            return c.json({ error: "Unauthorized" }, 401);
+        }
+
+        const path = payload.project?.path_with_namespace?.trim();
+        if (!path) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+
+        const personalAccessToken = decrypt(access.accessToken);
+        const gitlab = new GitLabProvider(access.baseUrl, personalAccessToken, projectId);
+        const isMaintainer = await gitlab.isConnectedAccountProjectMaintainer();
+        if (!isMaintainer) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+
+        c.set("webhookRepositoryCreate", {
+            access,
+            provider: "gitlab",
+            gitProviderRepositoryId: projectId,
+            path,
+            description: payload.project?.description ?? null,
+        });
+    } catch (error) {
+        logError("GitLab auto registration verify failed", error, "GitLab");
+        return c.json({ error: "Webhook processing failed" }, 503);
     }
 
-    const defaultWebhookSecret = decrypt(access.defaultWebhookSecret!).trim();
-    if (!verifyGitlabToken(defaultWebhookSecret, c.req.header("X-Gitlab-Token"))) {
-        return c.json({ error: "Unauthorized" }, 401);
-    }
-
-    const path = payload.project?.path_with_namespace?.trim();
-    if (!path) {
-        return c.json({ error: "Repository not found" }, 404);
-    }
-
-    const personalAccessToken = decrypt(access.accessToken);
-    const gitlab = new GitLabProvider(access.baseUrl, personalAccessToken, projectId);
-    const isMaintainer = await gitlab.isConnectedAccountProjectMaintainer();
-    if (!isMaintainer) {
-        return c.json({ error: "Repository not found" }, 404);
-    }
-
-    c.set("webhookRepositoryCreate", {
-        access,
-        provider: "gitlab",
-        gitProviderRepositoryId: projectId,
-        path,
-        description: payload.project?.description ?? null,
-    });
     await next();
 });

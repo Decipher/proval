@@ -131,6 +131,9 @@ export const updateAccessById = async (c: Context) => {
         ) {
             return c.json({ error: msg }, 400);
         }
+        if (msg.includes("UNIQUE") || msg.includes("unique")) {
+            return c.json({ error: "This access already exists" }, 409);
+        }
         throw e;
     }
 };

@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createMiddleware } from "hono/factory";
 import { decrypt } from "../../util/encrypt.js";
-import { log } from "../../util/log.js";
+import { log, logError } from "../../util/log.js";
 import { ForgejoProvider } from "../../git-provider/forgejo.js";
 import { GitLabAccessService } from "../../api/access/access.service.js";
 import { fetchWebhookContextRow, originFromWebhookUrl } from "../load-repository.middleware.js";
@@ -99,45 +99,51 @@ export const verifyForgejoWebhook = createMiddleware(async (c, next) => {
         return c.json({ error: "Repository not found" }, 404);
     }
 
-    const access = await accessService.findForAutoCreate("forgejo", instanceBaseUrl);
-    if (!access) {
-        return c.json({ error: "Repository not found" }, 404);
+    try {
+        const access = await accessService.findForAutoCreate("forgejo", instanceBaseUrl);
+        if (!access) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+
+        const defaultWebhookSecret = decrypt(access.defaultWebhookSecret!).trim();
+        if (!verifyForgejoSignature(defaultWebhookSecret, rawBody, signature)) {
+            log("Invalid webhook signature", "Forgejo");
+            return c.json({ error: "Invalid webhook signature" }, 401);
+        }
+
+        const fullName = payload.repository?.full_name?.trim();
+        if (!fullName) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+        const ownerRepo = parseOwnerRepo(fullName);
+        if (!ownerRepo) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+
+        const personalAccessToken = decrypt(access.accessToken);
+        const forgejo = new ForgejoProvider(
+            access.baseUrl,
+            personalAccessToken,
+            ownerRepo.owner,
+            ownerRepo.repo,
+            repositoryId,
+        );
+        const isCollaborator = await forgejo.isConnectedAccountCollaborator();
+        if (!isCollaborator) {
+            return c.json({ error: "Repository not found" }, 404);
+        }
+
+        c.set("webhookRepositoryCreate", {
+            access,
+            provider: "forgejo",
+            gitProviderRepositoryId: repositoryId,
+            path: fullName,
+            description: payload.repository?.description ?? null,
+        });
+    } catch (error) {
+        logError("Forgejo auto registration verify failed", error, "Forgejo");
+        return c.json({ error: "Webhook processing failed" }, 503);
     }
 
-    const defaultWebhookSecret = decrypt(access.defaultWebhookSecret!).trim();
-    if (!verifyForgejoSignature(defaultWebhookSecret, rawBody, signature)) {
-        log("Invalid webhook signature", "Forgejo");
-        return c.json({ error: "Invalid webhook signature" }, 401);
-    }
-
-    const fullName = payload.repository?.full_name?.trim();
-    if (!fullName) {
-        return c.json({ error: "Repository not found" }, 404);
-    }
-    const ownerRepo = parseOwnerRepo(fullName);
-    if (!ownerRepo) {
-        return c.json({ error: "Repository not found" }, 404);
-    }
-
-    const personalAccessToken = decrypt(access.accessToken);
-    const forgejo = new ForgejoProvider(
-        access.baseUrl,
-        personalAccessToken,
-        ownerRepo.owner,
-        ownerRepo.repo,
-        repositoryId,
-    );
-    const isCollaborator = await forgejo.isConnectedAccountCollaborator();
-    if (!isCollaborator) {
-        return c.json({ error: "Repository not found" }, 404);
-    }
-
-    c.set("webhookRepositoryCreate", {
-        access,
-        provider: "forgejo",
-        gitProviderRepositoryId: repositoryId,
-        path: fullName,
-        description: payload.repository?.description ?? null,
-    });
     await next();
 });
