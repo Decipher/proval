@@ -1,43 +1,103 @@
-import { gitProviderAccessTable, modelProviderTable, repositoryTable } from "@proval/db";
-import db from "../../db/index.js";
-import { eq } from "drizzle-orm";
+import { timingSafeEqual } from "node:crypto";
 import { createMiddleware } from "hono/factory";
 import { decrypt } from "../../util/encrypt.js";
+import { GitLabProvider } from "../../git-provider/gitlab.js";
+import { GitLabAccessService } from "../../api/access/access.service.js";
+import { fetchWebhookContextRow, originFromWebhookUrl } from "../load-repository.middleware.js";
 
-export const loadGitLabContext = createMiddleware(async (c, next) => {
-    const payload = await c.req.json();
+const accessService = new GitLabAccessService();
 
-    const result = await db
-        .select({
-            repository: repositoryTable,
-            modelProvider: modelProviderTable,
-            access: gitProviderAccessTable,
-        })
-        .from(repositoryTable)
-        .innerJoin(modelProviderTable, eq(repositoryTable.modelProviderId, modelProviderTable.id))
-        .innerJoin(gitProviderAccessTable, eq(repositoryTable.gitProviderAccessId, gitProviderAccessTable.id))
-        .where(eq(repositoryTable.gitProviderRepositoryId, payload.project?.id));
+function verifyGitlabToken(secret: string, tokenHeader: string | undefined): boolean {
+    if (!tokenHeader) {
+        return false;
+    }
+    const expected = Buffer.from(secret, "utf8");
+    const received = Buffer.from(tokenHeader, "utf8");
+    if (expected.length !== received.length) {
+        return false;
+    }
+    return timingSafeEqual(expected, received);
+}
 
-    if (result.length === 0) {
+type GitLabWebhookPayload = {
+    project?: {
+        id?: number;
+        path_with_namespace?: string;
+        description?: string | null;
+        web_url?: string;
+    };
+};
+
+export const parseGitLabWebhook = createMiddleware(async (c, next) => {
+    const payload = (await c.req.json()) as GitLabWebhookPayload;
+    const projectId = payload.project?.id;
+    if (projectId === undefined) {
+        return c.json({ error: "Missing project in payload" }, 400);
+    }
+
+    c.set("gitlabPayload", payload);
+    await next();
+});
+
+export const verifyGitLabWebhook = createMiddleware(async (c, next) => {
+    const payload = c.get("gitlabPayload") as GitLabWebhookPayload;
+    const projectId = payload.project?.id;
+    if (projectId === undefined) {
+        return c.json({ error: "Missing project in payload" }, 400);
+    }
+
+    const existing = await fetchWebhookContextRow(projectId, "gitlab");
+    if (existing) {
+        const { repository } = existing;
+
+        const secret = decrypt(repository.webhookSecret).trim();
+        if (!secret) {
+            return c.json({ error: "Webhook secret not configured" }, 401);
+        }
+        if (!verifyGitlabToken(secret, c.req.header("X-Gitlab-Token"))) {
+            return c.json({ error: "Unauthorized" }, 401);
+        }
+
+        c.set("webhookRepositoryRow", existing);
+        await next();
+        return;
+    }
+
+    const instanceHeader = c.req.header("X-Gitlab-Instance");
+    const instanceBaseUrl = instanceHeader?.trim() || originFromWebhookUrl(payload.project?.web_url ?? "");
+    if (!instanceBaseUrl) {
         return c.json({ error: "Repository not found" }, 404);
     }
 
-    const { repository, modelProvider, access } = result[0];
-
-    const secret = decrypt(repository.webhookSecret).trim();
-    if (!secret) {
-        return c.json({ error: "Webhook secret not configured" }, 401);
+    const access = await accessService.findForAutoCreate("gitlab", instanceBaseUrl);
+    if (!access) {
+        return c.json({ error: "Repository not found" }, 404);
     }
-    if (secret !== c.req.header("X-Gitlab-Token")) {
+
+    const defaultWebhookSecret = decrypt(access.defaultWebhookSecret!).trim();
+    if (!verifyGitlabToken(defaultWebhookSecret, c.req.header("X-Gitlab-Token"))) {
         return c.json({ error: "Unauthorized" }, 401);
     }
 
-    c.set("repository", {
-        ...repository,
-        accessToken: repository.accessToken ? decrypt(repository.accessToken) : repository.accessToken,
+    const path = payload.project?.path_with_namespace?.trim();
+    if (!path) {
+        return c.json({ error: "Repository not found" }, 404);
+    }
+
+    const personalAccessToken = decrypt(access.accessToken);
+    const gitlab = new GitLabProvider(access.baseUrl, personalAccessToken, projectId);
+    const isMaintainer = await gitlab.isConnectedAccountProjectMaintainer();
+    if (!isMaintainer) {
+        return c.json({ error: "Repository not found" }, 404);
+    }
+
+    c.set("webhookRepositoryCreate", {
+        access,
+        provider: "gitlab",
+        gitProviderRepositoryId: projectId,
+        path,
+        description: payload.project?.description ?? null,
     });
-    c.set("modelProvider", { ...modelProvider, apiKey: decrypt(modelProvider.apiKey) });
-    c.set("gitlabPayload", payload);
-    c.set("access", { ...access, accessToken: decrypt(access.accessToken) });
+
     await next();
 });

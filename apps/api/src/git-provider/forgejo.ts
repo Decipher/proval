@@ -56,6 +56,12 @@ export class ForgejoProvider implements GitProvider {
         return { username: user.login };
     }
 
+    public async isConnectedAccountCollaborator(): Promise<boolean> {
+        const user = await this.fetchCurrentUser();
+        const level = await this.fetchUserPermission({ login: user.username });
+        return level > 0;
+    }
+
     public async fetchUserPermission(identity: GitUserPermissionIdentity): Promise<number> {
         if (!("login" in identity) || !identity.login) {
             throw new Error("Forgejo fetchUserPermission requires login");

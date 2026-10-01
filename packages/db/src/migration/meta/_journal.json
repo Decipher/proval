@@ -281,6 +281,20 @@
       "when": 1789817479182,
       "tag": "0039_green_expediter",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1790515152415,
+      "tag": "0040_slimy_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1790819728989,
+      "tag": "0041_odd_bulldozer",
+      "breakpoints": true
     }
   ]
 }

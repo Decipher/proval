@@ -12,7 +12,6 @@
         formName = $bindable(""),
         formBaseUrl = $bindable(""),
         formAccessToken = $bindable(""),
-        editingId,
         isSavingAccess,
         onSubmit,
         onCancel,
@@ -21,7 +20,6 @@
         formName: string;
         formBaseUrl: string;
         formAccessToken: string;
-        editingId: number | null;
         isSavingAccess: boolean;
         onSubmit: () => void;
         onCancel: () => void;
@@ -31,11 +29,7 @@
     let testResult = $state<{ success: boolean; message: string } | null>(null);
 
     const title = $derived(
-        editingId !== null
-            ? "Edit Access"
-            : formProvider === "gitlab"
-              ? "Add GitLab connection"
-              : "Add Forgejo connection",
+        formProvider === "gitlab" ? "Add GitLab connection" : "Add Forgejo connection",
     );
 
     const accessFormNamePlaceholder = $derived(formProvider === "gitlab" ? "Production GitLab" : "Team Forgejo");
@@ -88,7 +82,6 @@
     <Select
         label="Provider"
         bind:value={formProvider}
-        disabled={editingId !== null}
         options={[
             { value: "gitlab", label: "GitLab", description: "Self hosted GitLab" },
             { value: "forgejo", label: "Forgejo", description: "Forgejo, Gitea, or Codeberg" },
@@ -103,14 +96,12 @@
             <InputText {id} placeholder={accessFormBaseUrlPlaceholder} bind:value={formBaseUrl} />
         {/snippet}
     </FormField>
-    {#if editingId === null}
-        <FormField label="Access token" description={accessFormTokenDescription}>
-            {#snippet children({ id })}
-                <InputText {id} placeholder={accessFormTokenPlaceholder} bind:value={formAccessToken} password />
-            {/snippet}
-        </FormField>
-    {/if}
-    {#if editingId === null && testResult}
+    <FormField label="Access token" description={accessFormTokenDescription}>
+        {#snippet children({ id })}
+            <InputText {id} placeholder={accessFormTokenPlaceholder} bind:value={formAccessToken} password />
+        {/snippet}
+    </FormField>
+    {#if testResult}
         <div
             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm {testResult.success
                 ? 'bg-emerald-50 text-emerald-700'
@@ -122,16 +113,14 @@
     <div class="flex justify-between gap-3 pt-2">
         <div class="flex gap-3">
             <Button primary onclick={onSubmit} disabled={isSavingAccess}>
-                {isSavingAccess ? "Saving..." : editingId !== null ? "Update" : "Create"}
+                {isSavingAccess ? "Saving..." : "Create"}
             </Button>
             <Button text onclick={onCancel} disabled={isSavingAccess}>Cancel</Button>
         </div>
         <div>
-            {#if editingId === null}
-                <Button text onclick={testConnection} disabled={isTesting || isSavingAccess}>
-                    {isTesting ? "Testing..." : "Test Connection"}
-                </Button>
-            {/if}
+            <Button text onclick={testConnection} disabled={isTesting || isSavingAccess}>
+                {isTesting ? "Testing..." : "Test Connection"}
+            </Button>
         </div>
     </div>
 </div>

@@ -30,11 +30,9 @@
 
     let { data }: PageProps = $props();
 
-    // Access states
     let accessList = $state<AccessResponse[]>(data.accessList);
     let showModal = $state(false);
     let accessFormKey = $state(0);
-    let editingId = $state<number | null>(null);
     let isSavingAccess = $state(false);
     let isTestingId = $state<number | null>(null);
     let testResult = $state<{ id: number; success: boolean; message: string } | null>(null);
@@ -64,10 +62,8 @@
         replaceState("/provider", {});
     });
 
-    // Access functions
     function openAddModal(provider: AccessProvider) {
         accessFormKey += 1;
-        editingId = null;
         formProvider = provider;
         formName = "";
         formBaseUrl = "";
@@ -76,20 +72,8 @@
         showModal = true;
     }
 
-    function openEditForm(item: AccessResponse) {
-        accessFormKey += 1;
-        editingId = item.id;
-        formProvider = item.provider;
-        formName = item.name;
-        formBaseUrl = item.baseUrl;
-        formAccessToken = "";
-        testResult = null;
-        showModal = true;
-    }
-
     function closeAccessModal() {
         showModal = false;
-        editingId = null;
         testResult = null;
     }
 
@@ -98,49 +82,30 @@
             await openAlert("Name and base URL are required");
             return;
         }
-        if (editingId === null && !formAccessToken.trim()) {
+        if (!formAccessToken.trim()) {
             await openAlert("Access token is required");
             return;
         }
         isSavingAccess = true;
         try {
-            if (editingId !== null) {
-                const payload = {
-                    name: formName.trim(),
-                    baseUrl: formBaseUrl.trim(),
-                };
-                const res = await fetchApi(`/access/${editingId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    await openAlert(body.error || "Failed to update access");
-                    return;
-                }
-                const result = await res.json();
-                accessList = accessList.map((a) => (a.id === editingId ? { ...a, ...result } : a));
-            } else {
-                const payload = {
-                    provider: formProvider,
-                    name: formName.trim(),
-                    baseUrl: formBaseUrl.trim(),
-                    accessToken: formAccessToken,
-                };
-                const res = await fetchApi("/access", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    await openAlert(body.error || "Failed to create access");
-                    return;
-                }
-                const result = await res.json();
-                accessList.push(result);
+            const payload = {
+                provider: formProvider,
+                name: formName.trim(),
+                baseUrl: formBaseUrl.trim(),
+                accessToken: formAccessToken,
+            };
+            const res = await fetchApi("/access", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                await openAlert(body.error || "Failed to create access");
+                return;
             }
+            const result = await res.json();
+            accessList.push(result);
             closeAccessModal();
         } catch {
             await openAlert("Failed to save access");
@@ -207,7 +172,6 @@
 
 <DefaultLayout title="Git Provider">
     <div class="space-y-6">
-        <!-- GitLab Access Card -->
         <Card title="GitLab" border>
             <div class="space-y-4">
                 {#if gitlabList.length > 0}
@@ -219,7 +183,6 @@
                                 isTesting={isTestingId === item.id}
                                 onTest={() => testAccess(item.id)}
                                 onUpdateToken={() => openUpdateAccessTokenModal(item)}
-                                onEdit={() => openEditForm(item)}
                                 onDelete={() => deleteAccess(item.id)} />
                         {/each}
                     </div>
@@ -241,7 +204,6 @@
             </div>
         </Card>
 
-        <!-- Forgejo Access Card -->
         <Card title="Forgejo" border>
             <div class="space-y-4">
                 {#if forgejoList.length > 0}
@@ -253,7 +215,6 @@
                                 isTesting={isTestingId === item.id}
                                 onTest={() => testAccess(item.id)}
                                 onUpdateToken={() => openUpdateAccessTokenModal(item)}
-                                onEdit={() => openEditForm(item)}
                                 onDelete={() => deleteAccess(item.id)} />
                         {/each}
                     </div>
@@ -278,7 +239,6 @@
         <GitHubCard app={data.app} installationList={data.installationList} />
     </div>
 
-    <!-- Add/Edit Modal -->
     <Modal bind:open={showModal} onclose={closeAccessModal} class="max-w-md">
         {#key accessFormKey}
             <AccessForm
@@ -286,14 +246,12 @@
                 bind:formName
                 bind:formBaseUrl
                 bind:formAccessToken
-                {editingId}
                 {isSavingAccess}
                 onSubmit={saveAccess}
                 onCancel={closeAccessModal} />
         {/key}
     </Modal>
 
-    <!-- Update Access Token Modal -->
     <Modal bind:open={updateAccessTokenModalOpen} onclose={closeUpdateAccessTokenModal}>
         {#if selectedAccessId !== null && selectedAccessProvider !== null}
             <PatchSecret
