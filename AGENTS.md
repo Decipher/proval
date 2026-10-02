@@ -140,30 +140,9 @@ When adding a new alternatives page, add a matching `render-og.ts` card entry an
     - Creating new package(packages/) is allowed if it's necessary.
 - English is the main language on this project.
 
-## Community Edition and Enterprise Edition
-
-Proval is started from just Open Sourced project, but planned to be separated into Community Edition(CE) and Enterprise Edition(EE). It's like a 'open core' model. ex. GitLab, Plausible, Mattermost
-
-CE and EE is all self-hosted. Features of EE will be stay in Repository and be protected by license.
-
-Community Edition will be free to use. You can use core features of Proval.
-Enterprise Edition will be paid. You can use Premium features of Proval.
-
-### SaaS Cloud Service
-
-Proval is Self-hosted project, but planned to be launched to SaaS Cloud Service in the future. It will be based on Cloudflare Workers, D1. You must consider compatibility with 'cloudflare workers and d1' when you write/modify the code for Proval.
-
-### Core Features (CE, Basic Plan from SaaS)
+### Core Features
 
 - Pull Request Review
 - Pull Request Approval/Rejection
 - Issue Management
 - Reply
-
-### Premium Features (EE, Premium Plan from SaaS)
-
-- SSO
-- RBAC
-- Audit Log
-- Team Management
-- Centralized Configuration
