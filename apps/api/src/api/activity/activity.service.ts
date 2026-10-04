@@ -26,8 +26,6 @@ import { runWithActivity } from "./activity.runner.js";
 const RETRY_TYPES = ["pr_review", "issue_open"] as const;
 type RetryActivityType = (typeof RETRY_TYPES)[number];
 
-const MAX_ACTIVITY_LOGS = 200;
-
 const FINISHED_STATUSES = ["completed", "failed", "canceled"] as const;
 
 const { logs: _, ...activityWithoutLogs } = getTableColumns(activityTable);
@@ -296,9 +294,7 @@ export class ActivityService {
                 outputToken: activityTable.outputToken,
             })
             .from(activityTable)
-            .where(
-                finishedActivityWhere(rowLowerBound, repositoryId),
-            );
+            .where(finishedActivityWhere(rowLowerBound, repositoryId));
 
         for (const row of rows) {
             if (!row.completedAt) continue;
@@ -323,7 +319,11 @@ export class ActivityService {
         });
     }
 
-    public async getTokenBreakdownByModel(since: Date, limit = 5, repositoryId?: number): Promise<TokenBreakdownItem[]> {
+    public async getTokenBreakdownByModel(
+        since: Date,
+        limit = 5,
+        repositoryId?: number,
+    ): Promise<TokenBreakdownItem[]> {
         const tokenSum = sql<number>`sum(coalesce(${activityTable.inputToken}, 0) + coalesce(${activityTable.outputToken}, 0))`;
         const rows = await db
             .select({
@@ -448,18 +448,7 @@ export class ActivityService {
             const entryJson = JSON.stringify(entry);
             await db
                 .update(activityTable)
-                .set({
-                    logs: sql`CASE
-                        WHEN json_array_length(${activityTable.logs}) >= ${MAX_ACTIVITY_LOGS} THEN
-                            json_insert(
-                                json_remove(${activityTable.logs}, '$[0]'),
-                                '$[#]',
-                                json(${entryJson})
-                            )
-                        ELSE
-                            json_insert(${activityTable.logs}, '$[#]', json(${entryJson}))
-                    END`,
-                })
+                .set({ logs: sql`json_insert(${activityTable.logs}, '$[#]', json(${entryJson}))` })
                 .where(eq(activityTable.id, id));
         } catch {
             // Logging must never fail the activity run.
