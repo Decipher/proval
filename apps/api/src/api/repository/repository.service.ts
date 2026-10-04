@@ -1,4 +1,3 @@
-import type { Repository, RepositoryResponse, RepositoryInsert, RepositoryUpdateInput } from "@proval/types";
 import db from "../../db/index.js";
 import { activityTable, githubAppTable, githubInstallationTable, repositoryTable } from "@proval/db";
 import { desc, eq, getTableColumns, max } from "drizzle-orm";
@@ -12,7 +11,14 @@ import { GitLabProvider } from "../../git-provider/gitlab.js";
 import type { GitProvider } from "../../git-provider/types.js";
 import { logError } from "../../util/log.js";
 import { decrypt, encrypt } from "../../util/encrypt.js";
-import { USER_PROMPT_MAX_LENGTH } from "@proval/types";
+import { reasoningEffortValueList, USER_PROMPT_MAX_LENGTH } from "@proval/types";
+import type {
+    ReasoningEffort,
+    Repository,
+    RepositoryResponse,
+    RepositoryInsert,
+    RepositoryUpdateInput,
+} from "@proval/types";
 
 const accessService = new GitLabAccessService();
 
@@ -68,6 +74,9 @@ export class RepositoryService {
     public async create(data: RepositoryInsert): Promise<RepositoryResponse> {
         if (Object.hasOwn(data, "userPrompt")) {
             data.userPrompt = this.normalizeUserPrompt(data.userPrompt);
+        }
+        if (Object.hasOwn(data, "reasoningEffort")) {
+            data.reasoningEffort = this.normalizeReasoningEffort(data.reasoningEffort);
         }
         const isGitHub = data.provider === "github";
         const isWebhookSecretEmpty =
@@ -135,6 +144,9 @@ export class RepositoryService {
         const cleanData = this.removeUndefined(data);
         if (Object.hasOwn(cleanData, "userPrompt")) {
             cleanData.userPrompt = this.normalizeUserPrompt(cleanData.userPrompt);
+        }
+        if (Object.hasOwn(cleanData, "reasoningEffort")) {
+            cleanData.reasoningEffort = this.normalizeReasoningEffort(cleanData.reasoningEffort);
         }
         let gitLabRevokeAfterUpdate: {
             baseUrl: string;
@@ -392,6 +404,23 @@ export class RepositoryService {
             }
         }
         await db.delete(repositoryTable).where(eq(repositoryTable.id, id));
+    }
+
+    private normalizeReasoningEffort(reasoningEffort: unknown): ReasoningEffort {
+        if (reasoningEffort == null) {
+            return null;
+        }
+        if (typeof reasoningEffort !== "string") {
+            throw new Error("Reasoning effort must be a string");
+        }
+        const trimmed = reasoningEffort.trim();
+        if (!trimmed) {
+            return null;
+        }
+        if (!(reasoningEffortValueList as readonly string[]).includes(trimmed)) {
+            throw new Error("Invalid reasoning effort");
+        }
+        return trimmed as NonNullable<ReasoningEffort>;
     }
 
     private normalizeUserPrompt(userPrompt: unknown): string | null {

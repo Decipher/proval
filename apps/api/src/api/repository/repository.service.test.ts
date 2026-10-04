@@ -315,4 +315,12 @@ describe("Update GitLab Repository", () => {
             "Custom instructions must be a string",
         );
     });
+
+    it("rejects invalid reasoning effort", async () => {
+        await expect(
+            repositoryService.update(1, { reasoningEffort: "bogus" as "medium" }),
+        ).rejects.toThrow(
+            "Invalid reasoning effort",
+        );
+    });
 });
