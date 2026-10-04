@@ -614,6 +614,7 @@ export class ActivityService {
                     prIid,
                     isInlineReview: repository.prInlineReview,
                     language: repository.language,
+                    userPrompt: repository.userPrompt,
                     activityId,
                     isFollowUpReview,
                     previousHeadSha: isFollowUpReview ? lastHeadSha : null,

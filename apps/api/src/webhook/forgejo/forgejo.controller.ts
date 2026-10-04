@@ -234,6 +234,7 @@ const handleForgejoPullRequestWebhook = async (
                 prIid: prNumber,
                 isInlineReview: repository.prInlineReview,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,
@@ -438,6 +439,7 @@ const handleForgejoCommentWebhook = async (
                 issueIid: targetIid,
                 commentId: comment.id,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
             }),
     ).catch((error) => {
@@ -570,6 +572,7 @@ async function startForgejoPrReply(
                 commentId,
                 inlineReviewId,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
             }),
     ).catch((error) => {

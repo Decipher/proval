@@ -23,6 +23,7 @@ type IssueReplyParams = {
     issueIid: number;
     commentId: number;
     language: string;
+    userPrompt?: string | null;
     activityId: number;
 };
 

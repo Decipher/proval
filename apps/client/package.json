@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "vite dev",
         "dev:demo": "PUBLIC_DEMO=true vite dev",
+        "prebuild:demo": "cd ../.. && bun run --filter @proval/db build && bun run --filter @proval/types build",
         "build": "vite build",
         "build:demo": "PUBLIC_DEMO=true vite build",
         "preview": "vite preview",

@@ -4,7 +4,7 @@ import type { Workspace } from "../../../git-provider/workspace.js";
 import { runAgentLoop, type LlmSender } from "../../llm/loop";
 import { INLINE_DISABLED, INLINE_ENABLED, SEVERITY } from "../prompt";
 import { COMMENT_LANGUAGE_RULE } from "../../shared/prompt";
-import { WRITING_WORKFLOW } from "./writing.prompt.js";
+import { PR_REVIEW_WRITING_USER_PROMPT_HEADER, WRITING_WORKFLOW } from "./writing.prompt.js";
 import { FOLLOW_UP_REVIEW_RULE } from "./follow-up.prompt.js";
 import {
     createMultiLineCommentTool,
@@ -20,6 +20,7 @@ import {
 } from "../tool";
 import { getFileContentTool, globTool, grepTool, listDirectoryTool } from "../../shared/tool";
 import { ActivityService } from "../../../api/activity/activity.service.js";
+import { generateUserPrompt } from "../../../util/user-prompt.js";
 import type { ReviewHandoff } from "./handoff.schema.js";
 
 const PRIOR_SUMMARY_MAX_CHARS = 4000;
@@ -40,6 +41,7 @@ export async function runReviewWritingAgent(
     isFollowUpReview = false,
     priorBotSummary: string | null = null,
     usePushScope = false,
+    userPrompt: string | null = null,
 ): Promise<ActivityTokenUsage> {
     const system = [
         WRITING_WORKFLOW,
@@ -47,6 +49,7 @@ export async function runReviewWritingAgent(
         SEVERITY,
         isInlineReview ? INLINE_ENABLED : INLINE_DISABLED,
         COMMENT_LANGUAGE_RULE,
+        generateUserPrompt(PR_REVIEW_WRITING_USER_PROMPT_HEADER, userPrompt),
     ]
         .filter(Boolean)
         .join("\n\n");

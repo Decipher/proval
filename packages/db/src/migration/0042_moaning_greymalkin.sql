@@ -1,0 +1,1 @@
+ALTER TABLE `repository` ADD `user_prompt` text;
