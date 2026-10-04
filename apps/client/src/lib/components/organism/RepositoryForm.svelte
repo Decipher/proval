@@ -139,7 +139,10 @@
     let issueReplyEnabled = $state<boolean>(config.issueReplyEnabled);
     let issueMentionOnly = $state<boolean>(config.issueMentionOnly);
 
-    let webhookSecret = $state<string | null>(editRepositoryId ? null : "");
+    let webhookSecret = $state("");
+    let webhookTokenType = $state<"secret" | "signing">("secret");
+    let webhookSigningToken = $state("");
+    let webhookSigningTokenModalOpen = $state(false);
     let webhookSecretModalOpen = $state(false);
     let modelListModalOpen = $state(false);
     let modelNameDraft = $state("");
@@ -266,8 +269,9 @@
 
         if (!editRepositoryId) {
             if (provider.type === "gitlab" || provider.type === "forgejo") {
-                if (!webhookSecret?.trim()) {
-                    await openAlert("Webhook secret is required");
+                const useSigningToken = provider.type === "gitlab" && webhookTokenType === "signing";
+                if (useSigningToken ? !webhookSigningToken.trim() : !webhookSecret?.trim()) {
+                    await openAlert(useSigningToken ? "Signing token is required" : "Webhook secret is required");
                     return;
                 }
             }
@@ -305,8 +309,11 @@
             body.gitProviderAccessId = provider.accessId;
             if (!editRepositoryId) {
                 // new repository
-                const trimmedSecret = webhookSecret?.trim();
-                if (trimmedSecret) (body as RepositoryInsert).webhookSecret = trimmedSecret;
+                if (provider.type === "gitlab" && webhookTokenType === "signing") {
+                    (body as RepositoryInsert).webhookSigningToken = webhookSigningToken.trim();
+                } else {
+                    (body as RepositoryInsert).webhookSecret = webhookSecret?.trim();
+                }
                 body.gitProviderRepositoryId = Number(selectedRepositoryId);
             } else if (config.repositoryId !== Number(selectedRepositoryId)) {
                 // update repository
@@ -337,20 +344,20 @@
 
 <form onsubmit={handleSubmit} class="space-y-8">
     <Card spaceY>
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-2">
                 <GitProviderIcon provider={provider.type} boxed />
                 <div class="min-w-0 flex-1">
                     {#if provider.type === "gitlab" || provider.type === "forgejo"}
                         <FieldTitle>{provider.label}</FieldTitle>
-                        <Description>{provider.baseUrl}</Description>
+                        <Description class="truncate">{provider.baseUrl}</Description>
                     {:else if provider.type === "github"}
                         <FieldTitle>{provider.label}</FieldTitle>
                         <Description>{capitalizeFirstLetter(provider.type)}</Description>
                     {/if}
                 </div>
             </div>
-            <div class="flex items-center justify-between gap-2">
+            <div class="flex min-w-0 items-center justify-between gap-2">
                 <p class="truncate text-sm text-neutral-800 dark:text-neutral-200">
                     {path ?? "—"}
                 </p>
@@ -372,19 +379,52 @@
 
         {#if provider.type === "gitlab" || provider.type === "forgejo"}
             {#if editRepositoryId}
-                <div class="flex justify-end pt-2">
+                <div class="flex flex-wrap justify-end gap-2 pt-2">
+                    {#if provider.type === "gitlab"}
+                        <Button
+                            text
+                            onclick={() => (webhookSigningTokenModalOpen = true)}
+                            type="button"
+                            class="w-auto text-xs">
+                            Update Signing Token
+                        </Button>
+                    {/if}
                     <Button text onclick={() => (webhookSecretModalOpen = true)} type="button" class="w-auto text-xs">
                         Update Webhook Secret
                     </Button>
                 </div>
             {:else}
-                <FormField
-                    label="Webhook secret"
-                    description="Must match the Secret Token in your GitLab or Forgejo webhook settings">
-                    {#snippet children({ id })}
-                        <InputText {id} password placeholder="secret" bind:value={webhookSecret as string} required />
-                    {/snippet}
-                </FormField>
+                {#if provider.type === "gitlab"}
+                    <Select
+                        label="Webhook token type"
+                        bind:value={webhookTokenType}
+                        options={[
+                            { value: "secret", label: "Secret token" },
+                            { value: "signing", label: "Signing token" },
+                        ]} />
+                {/if}
+                {#if provider.type === "gitlab" && webhookTokenType === "signing"}
+                    <FormField
+                        label="Signing token"
+                        description="Paste the signing token generated in your GitLab webhook settings">
+                        {#snippet children({ id })}
+                            <InputText
+                                {id}
+                                password
+                                placeholder="whsec_..."
+                                bind:value={webhookSigningToken}
+                                required />
+                        {/snippet}
+                    </FormField>
+                {:else}
+                    <FormField
+                        label="Webhook secret"
+                        description="Must match the Secret Token in your GitLab or Forgejo webhook settings">
+                        {#snippet children({ id })}
+                            <InputText {id} password placeholder="secret" bind:value={webhookSecret} required />
+                        {/snippet}
+                    </FormField>
+                {/if}
             {/if}
         {/if}
     </Card>
@@ -427,9 +467,7 @@
                 {/snippet}
             </FormField>
         </div>
-        <FormField
-            label="Custom prompt"
-            description="Applied to all agent activity for this repository.">
+        <FormField label="Custom prompt" description="Applied to all agent activity for this repository.">
             {#snippet children({ id })}
                 <textarea
                     {id}
@@ -437,7 +475,8 @@
                     maxlength={USER_PROMPT_MAX_LENGTH}
                     placeholder="Ignore the lack of test coverage."
                     rows={4}
-                    class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"></textarea>
+                    class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                ></textarea>
                 <p class="mt-1 text-right text-xs text-neutral-500 dark:text-neutral-400">
                     {userPromptLength}/{USER_PROMPT_MAX_LENGTH}
                 </p>
@@ -577,6 +616,17 @@
             placeholder="secret"
             patchEndpoint={`/repository/${editRepositoryId}/webhook-secret`}
             onSuccess={() => (webhookSecretModalOpen = false)} />
+    </Modal>
+{/if}
+
+{#if editRepositoryId && provider.type === "gitlab"}
+    <Modal bind:open={webhookSigningTokenModalOpen}>
+        <PatchSecret
+            label="Update Signing Token"
+            description="Paste the signing token generated in your GitLab webhook settings"
+            placeholder="whsec_..."
+            patchEndpoint={`/repository/${editRepositoryId}/webhook-signing-token`}
+            onSuccess={() => (webhookSigningTokenModalOpen = false)} />
     </Modal>
 {/if}
 

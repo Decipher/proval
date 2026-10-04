@@ -12,26 +12,37 @@
         patchEndpoint: string;
         onSuccess?: () => void;
     }
-    let { label, description, placeholder, patchEndpoint, onSuccess }: Props = $props();
+    const { label, description, placeholder, patchEndpoint, onSuccess }: Props = $props();
 
     let value = $state("");
+    let isSaving = $state(false);
 
     async function handleSubmit() {
+        if (isSaving) return;
         const trimmed = value.trim();
         if (!trimmed) {
             await openAlert("Please enter a value");
             return;
         }
-        const response = await fetchApi(patchEndpoint, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ value: trimmed }),
-        });
-        if (response.ok) {
-            await openAlert("Updated successfully");
-            onSuccess?.();
-        } else {
+        isSaving = true;
+        try {
+            const response = await fetchApi(patchEndpoint, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ value: trimmed }),
+            });
+            if (response.ok) {
+                value = "";
+                await openAlert("Updated successfully");
+                onSuccess?.();
+            } else {
+                const body = await response.json().catch(() => ({}));
+                await openAlert(body.error ?? "Failed to update");
+            }
+        } catch {
             await openAlert("Failed to update");
+        } finally {
+            isSaving = false;
         }
     }
 </script>
@@ -39,8 +50,8 @@
 <FormField {label} {description}>
     {#snippet children({ id })}
         <div class="flex items-center gap-3">
-            <InputText {id} {placeholder} class="min-w-0 flex-1" bind:value />
-            <Button primary type="button" onclick={handleSubmit}>Save</Button>
+            <InputText {id} {placeholder} password class="min-w-0 flex-1" bind:value />
+            <Button primary type="button" disabled={isSaving} onclick={handleSubmit}>Save</Button>
         </div>
     {/snippet}
 </FormField>

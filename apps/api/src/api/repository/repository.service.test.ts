@@ -4,7 +4,7 @@ import type { Repository } from "@proval/types";
 process.env.ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
 
 const insertReturningMock = mock<() => Promise<Repository[]>>(() => Promise.resolve([]));
-const insertValuesMock = mock((values: unknown) => ({
+const insertValuesMock = mock((_value: unknown) => ({
     returning: insertReturningMock,
 }));
 const insertMock = mock(() => ({
@@ -94,6 +94,7 @@ function makeRepositoryRow(overrides: Partial<Repository> = {}): Repository {
         description: null,
         provider: "gitlab",
         webhookSecret: "webhook-secret",
+        webhookSigningToken: null,
         language: "English",
         accessToken: "glpat-project",
         accessTokenId: 42,
@@ -304,9 +305,9 @@ describe("Update GitLab Repository", () => {
     });
 
     it("rejects userPrompt longer than the max length", async () => {
-        await expect(
-            repositoryService.update(1, { userPrompt: "a".repeat(2001) }),
-        ).rejects.toThrow("Custom instructions must be at most 2000 characters");
+        await expect(repositoryService.update(1, { userPrompt: "a".repeat(2001) })).rejects.toThrow(
+            "Custom instructions must be at most 2000 characters",
+        );
     });
 
     it("rejects userPrompt when it is not a string", async () => {

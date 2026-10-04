@@ -5,6 +5,7 @@ import {
     createRepository,
     updateRepository,
     updateWebhookSecret,
+    updateWebhookSigningToken,
     refreshRepositoryPath,
     removeRepository,
 } from "./repository/repository.controller.js";
@@ -59,6 +60,7 @@ apiRouter.get("/repository/:id", findRepositoryById);
 apiRouter.post("/repository", createRepository);
 apiRouter.put("/repository/:id", updateRepository);
 apiRouter.patch("/repository/:id/webhook-secret", updateWebhookSecret);
+apiRouter.patch("/repository/:id/webhook-signing-token", updateWebhookSigningToken);
 apiRouter.post("/repository/:id/refresh-path", refreshRepositoryPath);
 apiRouter.delete("/repository/:id", removeRepository);
 

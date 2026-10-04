@@ -69,11 +69,19 @@ export const loadRepository = createMiddleware(async (c, next) => {
 
     if (!row && createInput) {
         const access = createInput.access;
-        const webhookSecret = decrypt(access.defaultWebhookSecret!).trim();
+        const webhookSecret = access.defaultWebhookSecret ? decrypt(access.defaultWebhookSecret).trim() : null;
+        const webhookSigningToken =
+            createInput.provider === "gitlab" && access.defaultWebhookSigningToken
+                ? decrypt(access.defaultWebhookSigningToken).trim()
+                : null;
         const repositoryColumnKeySet = new Set(Object.keys(getTableColumns(repositoryTable)));
         const defaultConfigPolicy: Record<string, unknown> = {};
         for (const defaultKey of Object.keys(getTableColumns(gitProviderAccessTable))) {
-            if (!defaultKey.startsWith("default") || defaultKey === "defaultWebhookSecret") {
+            if (
+                !defaultKey.startsWith("default") ||
+                defaultKey === "defaultWebhookSecret" ||
+                defaultKey === "defaultWebhookSigningToken"
+            ) {
                 continue;
             }
             const rest = defaultKey.slice("default".length);
@@ -89,6 +97,7 @@ export const loadRepository = createMiddleware(async (c, next) => {
             description: createInput.description ?? null,
             provider: createInput.provider,
             webhookSecret,
+            webhookSigningToken,
             gitProviderAccessId: access.id,
             gitProviderRepositoryId: createInput.gitProviderRepositoryId,
         };

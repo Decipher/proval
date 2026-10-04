@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { GitLabAccessService } from "./access.service";
 import { GitLabProvider } from "../../git-provider/gitlab";
 import { ForgejoProvider } from "../../git-provider/forgejo";
+import { WebhookCredentialError } from "../../util/webhook-secret.js";
 import type {
     AccessInsert,
     AccessProvider,
@@ -114,7 +115,7 @@ export const updateAccessById = async (c: Context) => {
     if (!Number.isFinite(id)) {
         return c.json({ error: "Invalid access configuration id" }, 400);
     }
-    const body = await c.req.json<AccessUpdateInput & { accessToken?: string; defaultWebhookSecret?: string }>();
+    const body = await c.req.json<AccessUpdateInput & { accessToken?: string }>();
     try {
         const access = await accessService.updateById(id, body);
         return c.json(access, 200);
@@ -124,6 +125,7 @@ export const updateAccessById = async (c: Context) => {
             return c.json({ error: "Access configuration not found" }, 404);
         }
         if (
+            e instanceof WebhookCredentialError ||
             msg.includes("required") ||
             msg.includes("auto create") ||
             msg === "Name is required" ||

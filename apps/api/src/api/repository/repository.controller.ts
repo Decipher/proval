@@ -1,7 +1,7 @@
 import type { Handler } from "hono";
 import { RepositoryService } from "./repository.service.js";
 import type { RepositoryInsert, RepositoryUpdateInput, SecretInput } from "@proval/types";
-import { normalizeWebhookSecret } from "../../util/webhook-secret.js";
+import { normalizeWebhookSecret, WebhookCredentialError } from "../../util/webhook-secret.js";
 
 export const findAllRepositoryController: Handler = async (c) => {
     const repositoryService = new RepositoryService();
@@ -25,7 +25,7 @@ export const createRepository: Handler = async (c) => {
 
     if (body.provider === "gitlab" || body.provider === "forgejo") {
         const secret = normalizeWebhookSecret(body.webhookSecret);
-        if (!secret) {
+        if (body.provider === "forgejo" && !secret) {
             return c.json({ error: "Webhook secret is required" }, 400);
         }
         body.webhookSecret = secret;
@@ -42,7 +42,7 @@ export const createRepository: Handler = async (c) => {
             return c.json(repository, 201);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            if (message.startsWith("Custom instructions")) {
+            if (error instanceof WebhookCredentialError || message.startsWith("Custom instructions")) {
                 return c.json({ error: message }, 400);
             }
             throw error;
@@ -54,7 +54,7 @@ export const createRepository: Handler = async (c) => {
         return c.json(repository, 201);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        if (message.startsWith("Custom instructions")) {
+        if (error instanceof WebhookCredentialError || message.startsWith("Custom instructions")) {
             return c.json({ error: message }, 400);
         }
         throw error;
@@ -74,7 +74,7 @@ export const updateRepository: Handler = async (c) => {
         return c.json(repository, 200);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        if (message.startsWith("Custom instructions")) {
+        if (error instanceof WebhookCredentialError || message.startsWith("Custom instructions")) {
             return c.json({ error: message }, 400);
         }
         throw error;
@@ -105,6 +105,33 @@ export const updateWebhookSecret: Handler = async (c) => {
 
     await repositoryService.updateWebhookSecret(parseInt(repositoryId), secret);
     return c.json({ message: "Webhook secret updated" }, 200);
+};
+
+export const updateWebhookSigningToken: Handler = async (c) => {
+    const repositoryService = new RepositoryService();
+    const repositoryId = Number(c.req.param("id"));
+    if (!Number.isSafeInteger(repositoryId) || repositoryId <= 0) {
+        return c.json({ error: "Invalid repository ID" }, 400);
+    }
+    const { value } = await c.req.json<SecretInput>();
+    let repository;
+    try {
+        repository = await repositoryService.findById(repositoryId);
+    } catch {
+        return c.json({ error: "Repository not found" }, 404);
+    }
+    if (repository.provider !== "gitlab") {
+        return c.json({ error: "Signing token is only configurable for GitLab repositories" }, 400);
+    }
+    try {
+        await repositoryService.updateWebhookSigningToken(repositoryId, value);
+    } catch (error) {
+        if (error instanceof WebhookCredentialError) {
+            return c.json({ error: error.message }, 400);
+        }
+        throw error;
+    }
+    return c.json({ message: "Signing token updated" }, 200);
 };
 
 export const refreshRepositoryPath: Handler = async (c) => {
