@@ -182,6 +182,7 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
         baseURL: modelProvider.baseUrl,
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
+        reasoningEffort: repository.reasoningEffort,
     });
 
     const isInlineReview = repository.prInlineReview;
@@ -292,6 +293,7 @@ const handleGitLabPullRequestNoteWebhook: HandleGitLabPullRequestNoteWebhook = a
         baseURL: modelProvider.baseUrl,
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
+        reasoningEffort: repository.reasoningEffort,
     });
 
     const inlineReviewId = payload.object_attributes.discussion_id ?? null;
@@ -374,6 +376,7 @@ const handleGitLabIssueWebhook: HandleGitLabIssueWebhook = async (payload, repos
         baseURL: modelProvider.baseUrl,
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
+        reasoningEffort: repository.reasoningEffort,
     });
 
     const workspace = new Workspace(gitlabProvider);
@@ -476,6 +479,7 @@ const handleGitLabIssueNoteWebhook: HandleGitLabIssueNoteWebhook = async (
         baseURL: modelProvider.baseUrl,
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
+        reasoningEffort: repository.reasoningEffort,
     });
 
     const workspace = new Workspace(gitlabProvider);

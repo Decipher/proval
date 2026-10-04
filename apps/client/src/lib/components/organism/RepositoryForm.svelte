@@ -1,12 +1,13 @@
 <script lang="ts">
     import InputText from "../atom/InputText.svelte";
     import fetchApi from "$lib/utils";
-    import { USER_PROMPT_MAX_LENGTH } from "@proval/types";
+    import { reasoningEffortValueList, USER_PROMPT_MAX_LENGTH } from "@proval/types";
     import type {
         ModelProviderModelListResponse,
         ModelProviderResponse,
         ProviderOption,
         PrReviewOnPush,
+        ReasoningEffort,
         RepositoryInsert,
         RepositorySelectItem,
         RepositoryUpdateInput,
@@ -28,6 +29,7 @@
     interface Config {
         modelProviderId: number | null;
         modelName: string | null;
+        reasoningEffort: ReasoningEffort;
         repositoryId: number | null; // repository id from github/gitlab/forgejo for selection
 
         description: string | null;
@@ -92,6 +94,18 @@
 
     let selectedModelProviderId = $state<string>(String(config.modelProviderId ?? ""));
     let modelName = $state<string>(config.modelName ?? "");
+    let reasoningEffort = $state<string>(config.reasoningEffort ?? "");
+
+    const reasoningEffortSelectOptionList = [
+        {
+            value: "",
+            label: "Default",
+        },
+        ...reasoningEffortValueList.map((value) => ({
+            value,
+            label: value,
+        })),
+    ];
     let availableModels = $state<{ id: string }[]>([]);
     let isLoadingModels = $state(false);
     let selectedRepositoryId = $state<string>(String(config.repositoryId ?? ""));
@@ -284,6 +298,7 @@
             language,
             modelProviderId: Number(selectedModelProviderId),
             modelName: modelName.trim(),
+            reasoningEffort: reasoningEffort === "" ? null : (reasoningEffort as NonNullable<ReasoningEffort>),
             prEnabled,
             prMinAccessLevel: Number(prMinAccessLevel),
             prReviewEnabled,
@@ -421,15 +436,20 @@
             </FormField>
         </div>
         <div>
+            <Select
+                label="Reasoning effort"
+                description="Chosen value is sent to the model API. (Default sends empty)"
+                bind:value={reasoningEffort}
+                options={reasoningEffortSelectOptionList} />
+        </div>
+        <div>
             <FormField label="Language" description="Default language for code review">
                 {#snippet children({ id })}
                     <InputText {id} placeholder="English" bind:value={language} />
                 {/snippet}
             </FormField>
         </div>
-        <FormField
-            label="Custom prompt"
-            description="Applied to all agent activity for this repository.">
+        <FormField label="Custom prompt" description="Applied to all agent activity for this repository.">
             {#snippet children({ id })}
                 <textarea
                     {id}
@@ -437,7 +457,8 @@
                     maxlength={USER_PROMPT_MAX_LENGTH}
                     placeholder="Ignore the lack of test coverage."
                     rows={4}
-                    class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"></textarea>
+                    class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                ></textarea>
                 <p class="mt-1 text-right text-xs text-neutral-500 dark:text-neutral-400">
                     {userPromptLength}/{USER_PROMPT_MAX_LENGTH}
                 </p>
