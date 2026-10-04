@@ -1,3 +1,5 @@
+import { USER_PROMPT_BASE } from "../../../shared/prompt/user-prompt.js";
+
 export const PR_REPLY_BODY = [
     "You are a helpful code-review agent responding to a user's comment on a pull request.",
     "You have tools to read pull request metadata, diffs, existing comments, and repository files.",
@@ -64,3 +66,9 @@ export const PR_REPLY_WORKFLOW = [
     "- List tools return bodyPreview only; always fetch full text before replying.",
     "",
 ].join("\n");
+
+export const PR_REPLY_USER_PROMPT_HEADER = [
+    USER_PROMPT_BASE,
+    "Apply owner instructions to reply tone, emphasis, and omissions.",
+    "Do not run a full code review unless the commenter explicitly asks, even when owner instructions mention review focus.",
+].join("\n\n");

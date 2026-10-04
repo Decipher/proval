@@ -1,3 +1,5 @@
+import { USER_PROMPT_BASE } from "../../shared/prompt/user-prompt.js";
+
 export const REVIEW_SUB_AGENT_BODY = [
     "Review the diffs for the files in the assigned review unit against the checklist below.",
     "",
@@ -44,6 +46,12 @@ export const REVIEW_SUB_AGENT_BODY = [
     "- Do not call comment or approval tools.",
     "- Do not pad findings to look thorough. Important-only.",
 ].join("\n");
+
+export const PR_REVIEW_SUB_USER_PROMPT_HEADER = [
+    USER_PROMPT_BASE,
+    "Do not report findings in areas the owner asked you to ignore. Use domain notes as hints for where to read more.",
+    "Narrowing the checklist is allowed. Leaving a checklist row empty because of owner instructions is not a coverage gap.",
+].join("\n\n");
 
 export const REVIEW_SUB_AGENT_HANDOFF_FIELDS = [
     "# Handoff fields (submit_review_handoff)",

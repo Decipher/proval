@@ -322,6 +322,7 @@ async function main(): Promise<void> {
             prIid: 1,
             isInlineReview: config.inlineReview,
             language: config.language,
+            userPrompt: null,
             activityId: 0,
         });
 

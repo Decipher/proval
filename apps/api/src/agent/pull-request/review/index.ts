@@ -37,6 +37,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
         prIid,
         isInlineReview,
         language,
+        userPrompt = null,
         activityId,
         isFollowUpReview = false,
         previousHeadSha = null,
@@ -114,6 +115,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             activityId,
             isFollowUpReview,
             usePushScope,
+            userPrompt,
         );
         const total = planResult.reviewUnitList.length;
         const reviewHandoffList: ReviewHandoff[] = [];
@@ -132,6 +134,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
                     total,
                     activityId,
                     usePushScope,
+                    userPrompt,
                 ),
             ),
         );
@@ -154,6 +157,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             isFollowUpReview,
             priorBotSummary,
             usePushScope,
+            userPrompt,
         );
 
         const usage = {

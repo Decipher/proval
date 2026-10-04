@@ -1,3 +1,5 @@
+import { USER_PROMPT_BASE } from "../shared/prompt/user-prompt.js";
+
 export const ISSUE_REPLY_WORKFLOW = [
     "You are replying to a new issue comment.",
     "Reply by calling post_issue_reply exactly once. We do not need your final assistant message to be posted.",
@@ -20,3 +22,9 @@ export const ISSUE_REPLY_WORKFLOW = [
     "- List tools return bodyPreview only; always fetch full text before replying.",
     "",
 ].join("\n");
+
+export const ISSUE_REPLY_USER_PROMPT_HEADER = [
+    USER_PROMPT_BASE,
+    "Apply owner instructions to this reply.",
+    "Do not run a full code review unless the commenter explicitly asks.",
+].join("\n\n");

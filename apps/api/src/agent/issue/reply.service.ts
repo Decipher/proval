@@ -3,7 +3,7 @@ import { postDevDebugIssueComment } from "../shared/util/debug.js";
 import { runAgentLoop } from "../llm/loop";
 import { COMMENT_LANGUAGE_RULE } from "../shared/prompt";
 import { ISSUE_BASE_PROMPT } from "./prompt/issue.prompt.js";
-import { ISSUE_REPLY_WORKFLOW } from "./reply.prompt.js";
+import { ISSUE_REPLY_USER_PROMPT_HEADER, ISSUE_REPLY_WORKFLOW } from "./reply.prompt.js";
 import {
     getIssueCommentListTool,
     getIssueCommentTool,
@@ -15,6 +15,7 @@ import {
 import { getFileContentTool, globTool, grepTool, listDirectoryTool } from "../shared/tool";
 import type { IssueReply } from "./index.js";
 import { ActivityService } from "../../api/activity/activity.service.js";
+import { generateUserPrompt } from "../../util/user-prompt.js";
 
 export const runIssueReply: IssueReply = async ({
     provider,
@@ -24,6 +25,7 @@ export const runIssueReply: IssueReply = async ({
     commentId,
     language,
     activityId,
+    userPrompt = null,
 }) => {
     const label = `[Issue #${issueIid}] Reply`;
     try {
@@ -32,7 +34,14 @@ export const runIssueReply: IssueReply = async ({
         const repository = await provider.fetchRepositoryDetail();
         await workspace.loadFromBranch(repository.defaultBranch);
 
-        const system = [ISSUE_BASE_PROMPT, ISSUE_REPLY_WORKFLOW, COMMENT_LANGUAGE_RULE].join("\n");
+        const system = [
+            ISSUE_BASE_PROMPT,
+            ISSUE_REPLY_WORKFLOW,
+            COMMENT_LANGUAGE_RULE,
+            generateUserPrompt(ISSUE_REPLY_USER_PROMPT_HEADER, userPrompt),
+        ]
+            .filter(Boolean)
+            .join("\n\n");
         const prompt = `Reply to the new comment on Issue #${issueIid}. (commentId: ${commentId})`;
 
         debug(prompt, "prompt");

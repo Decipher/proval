@@ -2,7 +2,7 @@ import { logAgent, debug } from "../../../util/log";
 import { postDevDebugPullRequestComment } from "../../shared/util/debug.js";
 import { runAgentLoop } from "../../llm/loop";
 import { COMMENT_LANGUAGE_RULE } from "../../shared/prompt";
-import { PR_REPLY_BODY, PR_REPLY_WORKFLOW } from "./prompt/reply.prompt.js";
+import { PR_REPLY_BODY, PR_REPLY_USER_PROMPT_HEADER, PR_REPLY_WORKFLOW } from "./prompt/reply.prompt.js";
 import {
     getChangedFileListTool,
     getPullRequestCommentListTool,
@@ -14,6 +14,7 @@ import {
 import { getFileContentTool, globTool, grepTool, listDirectoryTool } from "../../shared/tool";
 import type { PullRequestCommentReply } from "../index.js";
 import { ActivityService } from "../../../api/activity/activity.service.js";
+import { generateUserPrompt } from "../../../util/user-prompt.js";
 
 export const runPullRequestCommentReply: PullRequestCommentReply = async ({
     provider,
@@ -23,6 +24,7 @@ export const runPullRequestCommentReply: PullRequestCommentReply = async ({
     commentId,
     language,
     activityId,
+    userPrompt = null,
 }) => {
     const label = `[PR #${prIid}] Reply`;
     try {
@@ -39,7 +41,14 @@ export const runPullRequestCommentReply: PullRequestCommentReply = async ({
             baseSha,
         });
 
-        const system = [PR_REPLY_BODY, PR_REPLY_WORKFLOW, COMMENT_LANGUAGE_RULE].join("\n");
+        const system = [
+            PR_REPLY_BODY,
+            PR_REPLY_WORKFLOW,
+            COMMENT_LANGUAGE_RULE,
+            generateUserPrompt(PR_REPLY_USER_PROMPT_HEADER, userPrompt),
+        ]
+            .filter(Boolean)
+            .join("\n\n");
         const prompt = `Reply to the new conversation comment on PR #${prIid}. (commentId: ${commentId})`;
 
         debug(prompt, "prompt");

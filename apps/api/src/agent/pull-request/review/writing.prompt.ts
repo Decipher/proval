@@ -1,3 +1,5 @@
+import { USER_PROMPT_BASE } from "../../shared/prompt/user-prompt.js";
+
 export const WRITING_WORKFLOW = [
     // Role
     "You are a collaborative code review assistant, not a fault finding bot.",
@@ -127,3 +129,8 @@ export const WRITING_WORKFLOW = [
     "When posting is done, call post_pull_request_comment exactly once for the summary (why: one durable top-level review readers will see).",
     "",
 ].join("\n");
+
+export const PR_REVIEW_WRITING_USER_PROMPT_HEADER = [
+    USER_PROMPT_BASE,
+    "Do not publish findings the owner asked you to omit, even if a sub-agent handoff included them.",
+].join("\n\n");

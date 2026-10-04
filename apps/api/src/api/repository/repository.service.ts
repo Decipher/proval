@@ -12,6 +12,7 @@ import { GitLabProvider } from "../../git-provider/gitlab.js";
 import type { GitProvider } from "../../git-provider/types.js";
 import { logError } from "../../util/log.js";
 import { decrypt, encrypt } from "../../util/encrypt.js";
+import { USER_PROMPT_MAX_LENGTH } from "@proval/types";
 
 const accessService = new GitLabAccessService();
 
@@ -65,6 +66,9 @@ export class RepositoryService {
     }
 
     public async create(data: RepositoryInsert): Promise<RepositoryResponse> {
+        if (Object.hasOwn(data, "userPrompt")) {
+            data.userPrompt = this.normalizeUserPrompt(data.userPrompt);
+        }
         const isGitHub = data.provider === "github";
         const isWebhookSecretEmpty =
             data.webhookSecret === undefined || data.webhookSecret === null || data.webhookSecret.trim() === "";
@@ -129,6 +133,9 @@ export class RepositoryService {
 
     public async update(repositoryId: number, data: RepositoryUpdateInput): Promise<RepositoryResponse> {
         const cleanData = this.removeUndefined(data);
+        if (Object.hasOwn(cleanData, "userPrompt")) {
+            cleanData.userPrompt = this.normalizeUserPrompt(cleanData.userPrompt);
+        }
         let gitLabRevokeAfterUpdate: {
             baseUrl: string;
             personalAccessToken: string;
@@ -385,6 +392,20 @@ export class RepositoryService {
             }
         }
         await db.delete(repositoryTable).where(eq(repositoryTable.id, id));
+    }
+
+    private normalizeUserPrompt(userPrompt: string | null | undefined): string | null {
+        if (userPrompt == null) {
+            return null;
+        }
+        const trimmed = userPrompt.trim();
+        if (!trimmed) {
+            return null;
+        }
+        if (trimmed.length > USER_PROMPT_MAX_LENGTH) {
+            throw new Error(`Custom instructions must be at most ${USER_PROMPT_MAX_LENGTH} characters`);
+        }
+        return trimmed;
     }
 
     private removeUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {

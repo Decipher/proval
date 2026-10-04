@@ -107,6 +107,7 @@ function makeRepositoryRow(overrides: Partial<Repository> = {}): Repository {
         prInlineReview: true,
         prReviewOnPush: "on_every_push",
         prIgnoreDraft: true,
+        userPrompt: null,
         prReplyEnabled: true,
         prMentionOnly: false,
         issueEnabled: true,
@@ -300,5 +301,11 @@ describe("Update GitLab Repository", () => {
                 42,
             );
         });
+    });
+
+    it("rejects userPrompt longer than the max length", async () => {
+        await expect(
+            repositoryService.update(1, { userPrompt: "a".repeat(2001) }),
+        ).rejects.toThrow("Custom instructions must be at most 2000 characters");
     });
 });

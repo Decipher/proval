@@ -37,12 +37,28 @@ export const createRepository: Handler = async (c) => {
         if (githubBody.githubRepositoryId == null) {
             return c.json({ error: "GitHub repository ID is required" }, 400);
         }
-        const repository = await repositoryService.create(githubBody as RepositoryInsert);
-        return c.json(repository, 201);
+        try {
+            const repository = await repositoryService.create(githubBody as RepositoryInsert);
+            return c.json(repository, 201);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.startsWith("Custom instructions")) {
+                return c.json({ error: message }, 400);
+            }
+            throw error;
+        }
     }
 
-    const repository = await repositoryService.create(body);
-    return c.json(repository, 201);
+    try {
+        const repository = await repositoryService.create(body);
+        return c.json(repository, 201);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.startsWith("Custom instructions")) {
+            return c.json({ error: message }, 400);
+        }
+        throw error;
+    }
 };
 
 export const updateRepository: Handler = async (c) => {
@@ -53,8 +69,16 @@ export const updateRepository: Handler = async (c) => {
     }
     const body = await c.req.json<RepositoryUpdateInput>();
 
-    const repository = await repositoryService.update(parseInt(repositoryId), body);
-    return c.json(repository, 200);
+    try {
+        const repository = await repositoryService.update(parseInt(repositoryId), body);
+        return c.json(repository, 200);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.startsWith("Custom instructions")) {
+            return c.json({ error: message }, 400);
+        }
+        throw error;
+    }
 };
 
 export const updateWebhookSecret: Handler = async (c) => {

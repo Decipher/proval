@@ -3,6 +3,7 @@ import { postDevDebugPullRequestComment } from "../../shared/util/debug.js";
 import { logAgent, debug } from "../../../util/log";
 import { runAgentLoop } from "../../llm/loop";
 import { COMMENT_LANGUAGE_RULE } from "../../shared/prompt";
+import { PR_REPLY_USER_PROMPT_HEADER } from "./prompt/reply.prompt.js";
 import { PR_INLINE_REVIEW_REPLY_APPENDIX } from "./inline-review.prompt.js";
 import { PR_REPLY_BODY, PR_REPLY_WORKFLOW } from "./prompt/reply.prompt.js";
 import {
@@ -16,6 +17,7 @@ import {
 } from "../tool";
 import { getFileContentTool, globTool, grepTool, listDirectoryTool } from "../../shared/tool";
 import { ActivityService } from "../../../api/activity/activity.service.js";
+import { generateUserPrompt } from "../../../util/user-prompt.js";
 
 export const runPullRequestInlineReviewReply: PullRequestInlineReviewReply = async ({
     provider,
@@ -26,6 +28,7 @@ export const runPullRequestInlineReviewReply: PullRequestInlineReviewReply = asy
     commentId,
     language,
     activityId,
+    userPrompt = null,
 }) => {
     const label = `[PR #${prIid}] Inline Review Reply`;
     try {
@@ -42,9 +45,15 @@ export const runPullRequestInlineReviewReply: PullRequestInlineReviewReply = asy
             baseSha,
         });
 
-        const system = [PR_REPLY_BODY, PR_REPLY_WORKFLOW, PR_INLINE_REVIEW_REPLY_APPENDIX, COMMENT_LANGUAGE_RULE].join(
-            "\n",
-        );
+        const system = [
+            PR_REPLY_BODY,
+            PR_REPLY_WORKFLOW,
+            PR_INLINE_REVIEW_REPLY_APPENDIX,
+            COMMENT_LANGUAGE_RULE,
+            generateUserPrompt(PR_REPLY_USER_PROMPT_HEADER, userPrompt),
+        ]
+            .filter(Boolean)
+            .join("\n\n");
         const prompt = `Reply to the new inline review comment on PR #${prIid}. (inlineReviewId: ${inlineReviewId}, commentId: ${commentId})`;
 
         debug(prompt, "prompt");

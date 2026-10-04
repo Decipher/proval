@@ -204,6 +204,7 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
                 prIid,
                 isInlineReview,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,
@@ -313,6 +314,7 @@ const handleGitLabPullRequestNoteWebhook: HandleGitLabPullRequestNoteWebhook = a
                 commentId,
                 inlineReviewId: isInlineReviewComment ? inlineReviewId : null,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
             }),
     ).catch((error) => {
@@ -493,6 +495,7 @@ const handleGitLabIssueNoteWebhook: HandleGitLabIssueNoteWebhook = async (
                 issueIid,
                 commentId,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
             }),
     ).catch((error) => {

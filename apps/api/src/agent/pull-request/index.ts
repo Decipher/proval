@@ -12,6 +12,7 @@ type PullRequestReviewParams = {
     prIid: number;
     isInlineReview: boolean;
     language: string;
+    userPrompt?: string | null;
     activityId: number;
     isFollowUpReview?: boolean;
     /** Head SHA of the last completed Proval review on this PR (follow-up compare base). */
@@ -25,6 +26,7 @@ type PullRequestReplyParams = {
     prIid: number;
     commentId: number;
     language: string;
+    userPrompt?: string | null;
     activityId: number;
 };
 

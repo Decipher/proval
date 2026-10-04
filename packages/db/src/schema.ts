@@ -138,6 +138,7 @@ export const repositoryTable = sqliteTable(
             .notNull()
             .default("on_every_push"),
         prIgnoreDraft: integer({ mode: "boolean" }).notNull().default(true),
+        userPrompt: text(),
 
         // Pull Request Reply
         prReplyEnabled: integer({ mode: "boolean" }).notNull().default(true),

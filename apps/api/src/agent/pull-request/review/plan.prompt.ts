@@ -1,3 +1,5 @@
+import { USER_PROMPT_BASE } from "../../shared/prompt/user-prompt.js";
+
 export const REVIEW_PLAN = [
     "You are the review planner. Use read-only tools to explore the pull request, then group changed files into review units for specialist sub-agents.",
     "Do NOT hunt for bugs in this phase — only partition changed files by logical relation.",
@@ -89,3 +91,10 @@ export const REVIEW_PLAN = [
     "- Do not group only by directory name, file name similarity, or package layout when the runtime workflow points elsewhere.",
     "- Do not discuss defects or suggest fixes in this phase.",
 ].join("\n");
+
+export const PR_REVIEW_PLAN_USER_PROMPT_HEADER = [
+    USER_PROMPT_BASE,
+    "Use domain context and finding priorities when grouping units.",
+    "Keep full changed-file coverage.",
+    "When the owner excludes file kinds, record them with skip_file rather than silent omission.",
+].join("\n\n");

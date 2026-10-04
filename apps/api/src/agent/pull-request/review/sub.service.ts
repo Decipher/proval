@@ -4,13 +4,18 @@ import type { Workspace } from "../../../git-provider/workspace.js";
 import type { LlmSender } from "../../llm/loop";
 import type { ReviewHandoff } from "./handoff.schema.js";
 import type { ReviewUnit } from "./plan.schema.js";
-import { REVIEW_SUB_AGENT_BODY, REVIEW_SUB_AGENT_HANDOFF_FIELDS } from "./sub.prompt.js";
+import {
+    PR_REVIEW_SUB_USER_PROMPT_HEADER,
+    REVIEW_SUB_AGENT_BODY,
+    REVIEW_SUB_AGENT_HANDOFF_FIELDS,
+} from "./sub.prompt.js";
 import { FOLLOW_UP_PUSH_SUB_HINT } from "./follow-up.prompt.js";
 import { REVIEW_CHECKLIST } from "../prompt";
 import { getFileDiffTool, getPushFileDiffTool, submitReviewHandoffTool } from "../tool";
 import { getFileContentTool, globTool, grepTool, listDirectoryTool } from "../../shared/tool";
 import { runAgentLoop } from "../../llm/loop";
 import { ActivityService } from "../../../api/activity/activity.service.js";
+import { generateUserPrompt } from "../../../util/user-prompt.js";
 
 export async function runReviewSubAgent(
     provider: GitProvider,
@@ -24,12 +29,14 @@ export async function runReviewSubAgent(
     totalIndex: number,
     activityId: number,
     usePushScope = false,
+    userPrompt: string | null = null,
 ): Promise<ActivityTokenUsage & { handoff: ReviewHandoff }> {
     const system = [
         REVIEW_SUB_AGENT_BODY,
         REVIEW_SUB_AGENT_HANDOFF_FIELDS,
         usePushScope ? FOLLOW_UP_PUSH_SUB_HINT : null,
         REVIEW_CHECKLIST,
+        generateUserPrompt(PR_REVIEW_SUB_USER_PROMPT_HEADER, userPrompt),
     ]
         .filter(Boolean)
         .join("\n\n");

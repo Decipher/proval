@@ -217,6 +217,7 @@ async function handlePullRequestWebhook(
                 prIid: prNumber,
                 isInlineReview,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,
@@ -384,6 +385,7 @@ async function handleIssueCommentWebhook(
                     commentId,
                     inlineReviewId: null,
                     language: repository.language,
+                    userPrompt: repository.userPrompt,
                     activityId,
                 }),
         ).catch((error) => {
@@ -437,6 +439,7 @@ async function handleIssueCommentWebhook(
                 issueIid: issueNumber,
                 commentId,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
             }),
     ).catch((error) => {
@@ -522,6 +525,7 @@ async function handlePullRequestReviewCommentWebhook(
                 commentId: comment.id,
                 inlineReviewId,
                 language: repository.language,
+                userPrompt: repository.userPrompt,
                 activityId,
             }),
     ).catch((error) => {
