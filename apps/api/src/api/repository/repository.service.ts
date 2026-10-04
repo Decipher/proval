@@ -394,9 +394,12 @@ export class RepositoryService {
         await db.delete(repositoryTable).where(eq(repositoryTable.id, id));
     }
 
-    private normalizeUserPrompt(userPrompt: string | null | undefined): string | null {
+    private normalizeUserPrompt(userPrompt: unknown): string | null {
         if (userPrompt == null) {
             return null;
+        }
+        if (typeof userPrompt !== "string") {
+            throw new Error("Custom instructions must be a string");
         }
         const trimmed = userPrompt.trim();
         if (!trimmed) {

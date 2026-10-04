@@ -308,4 +308,10 @@ describe("Update GitLab Repository", () => {
             repositoryService.update(1, { userPrompt: "a".repeat(2001) }),
         ).rejects.toThrow("Custom instructions must be at most 2000 characters");
     });
+
+    it("rejects userPrompt when it is not a string", async () => {
+        await expect(repositoryService.update(1, { userPrompt: 42 as unknown as string })).rejects.toThrow(
+            "Custom instructions must be a string",
+        );
+    });
 });
