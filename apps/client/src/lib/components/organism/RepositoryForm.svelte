@@ -427,6 +427,22 @@
                 {/snippet}
             </FormField>
         </div>
+        <FormField
+            label="Custom prompt"
+            description="Applied to all agent activity for this repository.">
+            {#snippet children({ id })}
+                <textarea
+                    {id}
+                    bind:value={userPrompt}
+                    maxlength={USER_PROMPT_MAX_LENGTH}
+                    placeholder="Ignore the lack of test coverage."
+                    rows={4}
+                    class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"></textarea>
+                <p class="mt-1 text-right text-xs text-neutral-500 dark:text-neutral-400">
+                    {userPromptLength}/{USER_PROMPT_MAX_LENGTH}
+                </p>
+            {/snippet}
+        </FormField>
     </Card>
 
     <Card spaceY>
@@ -466,23 +482,6 @@
                         <FieldTitle class="ml-1">Ignore draft pull requests</FieldTitle>
                         <ToggleSwitch bind:checked={prIgnoreDraft} disabled={!prEnabled || !prReviewEnabled} />
                     </div>
-                    <FormField
-                        label="Custom instructions"
-                        description="Applied to pull request review, pull request reply, and issue reply for this repository.">
-                        {#snippet children({ id })}
-                            <textarea
-                                {id}
-                                bind:value={userPrompt}
-                                maxlength={USER_PROMPT_MAX_LENGTH}
-                                disabled={!prEnabled || !prReviewEnabled}
-                                placeholder="Ignore the lack of test coverage."
-                                rows={4}
-                                class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-800"></textarea>
-                            <p class="mt-1 text-right text-xs text-neutral-500 dark:text-neutral-400">
-                                {userPromptLength}/{USER_PROMPT_MAX_LENGTH}
-                            </p>
-                        {/snippet}
-                    </FormField>
                 </div>
             </div>
 
