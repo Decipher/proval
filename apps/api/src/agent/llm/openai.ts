@@ -34,6 +34,11 @@ export function createOpenAiSender(config: SenderSDKConfig): LlmSender {
                 model: config.model,
                 messages: messages.map(convertToOpenAiMessage),
                 ...(openAiTools.length > 0 ? { tools: openAiTools, tool_choice: "auto" as const } : {}),
+                ...(config.reasoningEffort
+                    ? {
+                          reasoning_effort: config.reasoningEffort as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
+                      }
+                    : {}),
             });
 
             if (client.baseURL?.includes("openrouter.ai")) {

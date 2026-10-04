@@ -173,6 +173,7 @@
                 config={{
                     modelProviderId: null,
                     modelName: null,
+                    reasoningEffort: null,
                     repositoryId: selectedRepositoryId ? Number(selectedRepositoryId) : null,
                     description: null,
                     language: null,

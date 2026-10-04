@@ -8,6 +8,7 @@ export interface SenderConfig {
     baseURL: string;
     model: string;
     timeoutSecond: number;
+    reasoningEffort?: string | null;
 }
 
 export type SenderSDKConfig = Omit<SenderConfig, "provider"> & {

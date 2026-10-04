@@ -110,6 +110,7 @@
         config={{
             modelProviderId: data.repository.modelProviderId,
             modelName: data.repository.modelName,
+            reasoningEffort: data.repository.reasoningEffort,
             repositoryId: storedGitHostId,
             description: data.repository.description,
             language: data.repository.language,

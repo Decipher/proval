@@ -161,6 +161,7 @@ export const repositoryTable = sqliteTable(
 
         modelProviderId: integer().references(() => modelProviderTable.id),
         modelName: text().notNull().default(""),
+        reasoningEffort: text(),
 
         ...timeStamp,
     },

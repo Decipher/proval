@@ -25,9 +25,12 @@
     import ToggleSwitch from "../atom/ToggleSwitch.svelte";
     import FieldTitle from "../atom/FieldTitle.svelte";
 
+    const reasoningEffortSuggestionList = ["low", "medium", "high", "xhigh", "max"];
+
     interface Config {
         modelProviderId: number | null;
         modelName: string | null;
+        reasoningEffort: string | null;
         repositoryId: number | null; // repository id from github/gitlab/forgejo for selection
 
         description: string | null;
@@ -92,6 +95,7 @@
 
     let selectedModelProviderId = $state<string>(String(config.modelProviderId ?? ""));
     let modelName = $state<string>(config.modelName ?? "");
+    let reasoningEffort = $state<string>(config.reasoningEffort ?? "");
     let availableModels = $state<{ id: string }[]>([]);
     let isLoadingModels = $state(false);
     let selectedRepositoryId = $state<string>(String(config.repositoryId ?? ""));
@@ -284,6 +288,7 @@
             language,
             modelProviderId: Number(selectedModelProviderId),
             modelName: modelName.trim(),
+            reasoningEffort: reasoningEffort.trim() || null,
             prEnabled,
             prMinAccessLevel: Number(prMinAccessLevel),
             prReviewEnabled,
@@ -417,6 +422,19 @@
                             : 'text-neutral-400 dark:text-neutral-500'}">
                         {modelName || "anthropic/claude-sonnet-4.6"}
                     </button>
+                {/snippet}
+            </FormField>
+        </div>
+        <div>
+            <FormField
+                label="Reasoning effort"
+                description="Optional. Sent to the API when set. Leave empty for the provider default.">
+                {#snippet children({ id })}
+                    <InputText
+                        {id}
+                        placeholder="medium"
+                        suggestionList={reasoningEffortSuggestionList}
+                        bind:value={reasoningEffort} />
                 {/snippet}
             </FormField>
         </div>

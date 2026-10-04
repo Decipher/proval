@@ -41,6 +41,15 @@ export function createAnthropicSender(config: SenderSDKConfig): LlmSender {
                 cache_control: {
                     type: "ephemeral",
                 },
+                ...(config.reasoningEffort
+                    ? {
+                          output_config: {
+                              effort: config.reasoningEffort as NonNullable<
+                                  Anthropic.Messages.MessageCreateParams["output_config"]
+                              >["effort"],
+                          },
+                      }
+                    : {}),
             });
 
             // Extract text content and tool calls from content blocks
