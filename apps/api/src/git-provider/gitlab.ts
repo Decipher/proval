@@ -1,26 +1,29 @@
 import { createHash } from "node:crypto";
 import { Gitlab, type MergeRequestReviewerSchema } from "@gitbeaker/rest";
-import type {
-    GitComment,
-    GitCodeSearchResult,
-    GitDiffMultiLine,
-    GitDiffSingleLine,
-    GitIssue,
-    GitRepositoryLabel,
-    GitIssueState,
-    GitPullRequest,
-    GitPullRequestState,
-    GitPullRequestVersion,
-    GitProvider,
-    GitRelatedItem,
-    GitRepository,
-    GitTree,
-    GitUser,
-    GitUserPermissionIdentity,
-    GitRepositoryListItem,
-    GitPullRequestInlineReview,
-    GitDiffLine,
-    ListPaginationOptions,
+import {
+    emojiList,
+    type GitComment,
+    type GitCodeSearchResult,
+    type GitDiffMultiLine,
+    type GitDiffSingleLine,
+    type GitIssue,
+    type GitRepositoryLabel,
+    type GitIssueState,
+    type GitPullRequest,
+    type GitPullRequestState,
+    type GitPullRequestVersion,
+    type GitProvider,
+    type GitRelatedItem,
+    type GitRepository,
+    type GitTree,
+    type GitUser,
+    type GitUserPermissionIdentity,
+    type GitRepositoryListItem,
+    type GitPullRequestInlineReview,
+    type GitDiffLine,
+    type GitEmoji,
+    type GitEmojiTarget,
+    type ListPaginationOptions,
 } from "./types.js";
 
 type GitLabInlineNotePosition = {
@@ -713,6 +716,69 @@ export class GitLabProvider implements GitProvider {
             author: note.author.username,
             createdAt: note.created_at,
         };
+    }
+
+    public async addEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void> {
+        const name = emojiList[emoji]?.gitlab;
+        if (!name) return;
+
+        const path = this.gitlabEmojiApiPath(target);
+
+        try {
+            await this.requestJson(path, {
+                method: "POST",
+                body: JSON.stringify({ name }),
+            });
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 400 || status === 404) return;
+            throw error;
+        }
+    }
+
+    public async removeEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void> {
+        const name = emojiList[emoji]?.gitlab;
+        if (!name) return;
+
+        const bot = (await this.fetchCurrentUser()).username;
+        const path = this.gitlabEmojiApiPath(target);
+
+        type ExistingEmoji = { id: number; name: string; user?: { username?: string } };
+        let existingEmojiList: ExistingEmoji[];
+        try {
+            existingEmojiList = await this.requestJson<ExistingEmoji[]>(path);
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404) return;
+            throw error;
+        }
+
+        const matched = existingEmojiList.find((row) => row.name === name && row.user?.username === bot);
+        if (!matched) return;
+
+        try {
+            await this.requestJson(`${path}/${matched.id}`, { method: "DELETE" });
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404) return;
+            throw error;
+        }
+    }
+
+    /** GitLab REST uses the `award_emoji` path segment for emoji reactions. */
+    private gitlabEmojiApiPath(target: GitEmojiTarget): string {
+        const projectPath = encodeURIComponent(String(this.projectId));
+        switch (target.type) {
+            case "pull_request":
+                return `/projects/${projectPath}/merge_requests/${target.prIid}/award_emoji`;
+            case "issue":
+                return `/projects/${projectPath}/issues/${target.issueIid}/award_emoji`;
+            case "pull_request_comment":
+            case "inline_review_comment":
+                return `/projects/${projectPath}/merge_requests/${target.prIid}/notes/${target.commentId}/award_emoji`;
+            case "issue_comment":
+                return `/projects/${projectPath}/issues/${target.issueIid}/notes/${target.commentId}/award_emoji`;
+        }
     }
 
     public async approvePullRequest(prIid: number): Promise<void> {

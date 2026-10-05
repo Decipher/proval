@@ -16,6 +16,8 @@ import type {
     GitUserPermissionIdentity,
     GitRepositoryListItem,
     GitPullRequestInlineReview,
+    GitEmoji,
+    GitEmojiTarget,
     ListPaginationOptions,
 } from "../src/git-provider/types.js";
 
@@ -310,4 +312,8 @@ export class MockProvider implements GitProvider {
     async assignPullRequestReviewer(_prIid: number): Promise<void> {
         // Webhook-only; no-op for demo
     }
+
+    async addEmoji(_target: GitEmojiTarget, _emoji: GitEmoji): Promise<void> {}
+
+    async removeEmoji(_target: GitEmojiTarget, _emoji: GitEmoji): Promise<void> {}
 }
