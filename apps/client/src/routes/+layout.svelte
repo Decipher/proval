@@ -1,12 +1,15 @@
 <script lang="ts">
     import "./layout.css";
+    import { onMount } from "svelte";
     import { afterNavigate } from "$app/navigation";
     import { page } from "$app/state";
     import Sidebar from "$lib/components/Sidebar.svelte";
     import ProvalMark from "$lib/components/atom/ProvalMark.svelte";
+    import ThemeToggle from "$lib/components/atom/ThemeToggle.svelte";
     import ModalRoot from "$lib/components/organism/ModalRoot.svelte";
     import { isDemoMode } from "$lib/demo/enabled";
     import { isAuthPagePath } from "$lib/auth";
+    import { initializeTheme } from "$lib/store/theme";
 
     const GITHUB_URL = "https://github.com/seoes/proval";
 
@@ -16,6 +19,8 @@
     let sidebarAnimate = $state(false);
 
     const isLayoutHidden = $derived(isAuthPagePath(page.url.pathname));
+
+    onMount(initializeTheme);
 
     function toggleSidebar() {
         sidebarAnimate = true;
@@ -60,8 +65,11 @@
 </svelte:head>
 
 {#if isLayoutHidden}
-    <div class="min-h-screen bg-neutral-50">
-        <main class="mx-auto flex min-h-screen max-w-md items-center px-4 py-10">
+    <div class="relative min-h-screen bg-neutral-50">
+        <div class="absolute top-4 right-4">
+            <ThemeToggle />
+        </div>
+        <main class="mx-auto flex min-h-screen max-w-md items-center px-4 py-20">
             {@render children?.()}
         </main>
     </div>

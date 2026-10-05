@@ -1,71 +1,146 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
+    import { tick, type Component, type Snippet } from "svelte";
+    import { CheckIcon } from "phosphor-svelte";
     import { twMerge } from "tailwind-merge";
-    import Button from "./Button.svelte";
 
     interface ButtonItem {
         onclick: () => void;
         label: string;
+        icon?: Component;
+        selected?: boolean;
     }
 
     interface Props {
         buttonList: ButtonItem[];
         children: Snippet;
+        label?: string;
+        triggerClass?: string;
+        side?: "top" | "bottom";
+        align?: "start" | "end";
     }
 
-    let { buttonList, children }: Props = $props();
+    const { buttonList, children, label, triggerClass, side = "bottom", align = "end" }: Props = $props();
 
+    const menuId = $props.id();
     let open = $state(false);
-    let containerRef: HTMLDivElement;
+    let containerRef: HTMLDivElement | undefined = $state();
+    let triggerRef: HTMLButtonElement | undefined = $state();
+    let menuRef: HTMLDivElement | undefined = $state();
+
+    async function openPopover(last = false) {
+        open = true;
+        await tick();
+        if (!open) return;
+        const itemList = menuRef?.querySelectorAll<HTMLButtonElement>("button");
+        itemList?.[last ? itemList.length - 1 : 0]?.focus({ preventScroll: true });
+    }
+
+    function closePopover(restoreFocus = false) {
+        open = false;
+        if (restoreFocus) triggerRef?.focus({ preventScroll: true });
+    }
 
     function togglePopover() {
-        open = !open;
+        if (open) closePopover();
+        else void openPopover();
     }
 
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: PointerEvent) {
         if (containerRef && !containerRef.contains(event.target as Node)) {
-            open = false;
+            closePopover();
         }
     }
 
     function handleButtonClick(item: ButtonItem) {
         item.onclick();
-        open = false;
+        closePopover(true);
+    }
+
+    function handleTriggerKeydown(event: KeyboardEvent) {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            void openPopover(event.key === "ArrowUp");
+        }
+    }
+
+    function handleMenuKeydown(event: KeyboardEvent) {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            closePopover(true);
+            return;
+        }
+        if (event.key === "Tab") {
+            closePopover(true);
+            return;
+        }
+        if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+
+        event.preventDefault();
+        const itemList = Array.from(menuRef?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+        if (!itemList.length) return;
+        const index = itemList.findIndex((item) => item === document.activeElement);
+        const nextIndex =
+            event.key === "Home"
+                ? 0
+                : event.key === "End"
+                  ? itemList.length - 1
+                  : (index + (event.key === "ArrowDown" ? 1 : -1) + itemList.length) % itemList.length;
+        itemList[nextIndex]?.focus({ preventScroll: true });
     }
 
     $effect(() => {
-        if (open) {
-            document.addEventListener("click", handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener("click", handleClickOutside);
-        };
+        if (!open) return;
+        document.addEventListener("pointerdown", handleClickOutside);
+        return () => document.removeEventListener("pointerdown", handleClickOutside);
     });
 </script>
 
 <div bind:this={containerRef} class="relative inline-flex h-min">
-    <button type="button" onclick={togglePopover} class="h-min cursor-pointer">
+    <button
+        bind:this={triggerRef}
+        id={`${menuId}-trigger`}
+        type="button"
+        onclick={togglePopover}
+        onkeydown={handleTriggerKeydown}
+        class={twMerge("h-min cursor-pointer", triggerClass)}
+        aria-label={label}
+        title={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}>
         {@render children()}
     </button>
 
     {#if open}
         <div
+            bind:this={menuRef}
+            id={menuId}
+            role="menu"
+            tabindex="-1"
+            aria-labelledby={`${menuId}-trigger`}
+            onkeydown={handleMenuKeydown}
             class={twMerge(
-                "absolute top-full right-0 z-50 mt-1 w-max divide-y rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800",
+                "absolute z-50 min-w-40 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg",
+                align === "start" ? "left-0" : "right-0",
+                side === "top" ? "bottom-full mb-1" : "top-full mt-1",
             )}>
             {#each buttonList as item}
-                <div>
-                    <Button text class="border-none px-4 py-2" onclick={() => handleButtonClick(item)}
-                        >{item.label}</Button>
-                </div>
-                <!-- <button
+                <button
                     type="button"
-                    onclick={() => handleButtonClick(item)}
-                    class="block w-full cursor-pointer px-4 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                >
-                    {item.label}
-                </button> -->
+                    role={item.selected === undefined ? "menuitem" : "menuitemradio"}
+                    aria-checked={item.selected}
+                    tabindex="-1"
+                    class="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm whitespace-nowrap hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+                    onclick={() => handleButtonClick(item)}>
+                    {#if item.icon}
+                        <item.icon class="size-4 shrink-0" aria-hidden="true" />
+                    {/if}
+                    <span class="flex-1">{item.label}</span>
+                    {#if item.selected}
+                        <CheckIcon class="size-4 shrink-0" aria-hidden="true" />
+                    {/if}
+                </button>
             {/each}
         </div>
     {/if}

@@ -3,6 +3,19 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <script>
+            // Keep the initial theme in sync with src/lib/store/theme.ts
+            let theme = "system";
+            try {
+                const storedTheme = localStorage.getItem("proval.theme");
+                if (storedTheme === "light" || storedTheme === "dark") theme = storedTheme;
+            } catch {
+                // Use the system theme when storage is unavailable
+            }
+            const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+            document.documentElement.classList.toggle("dark", dark);
+            document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        </script>
         %sveltekit.head%
     </head>
     <body data-sveltekit-preload-data="hover">

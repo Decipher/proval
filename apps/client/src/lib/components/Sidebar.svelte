@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import ProvalMark from "$lib/components/atom/ProvalMark.svelte";
+    import ThemeToggle from "$lib/components/atom/ThemeToggle.svelte";
     import { HouseIcon, GitForkIcon, CubeIcon, GitBranchIcon, ChatCircleTextIcon, GearIcon } from "phosphor-svelte";
     import type { Component } from "svelte";
 
@@ -66,7 +67,7 @@
     }
 </script>
 
-<div class="h-full min-h-screen w-full bg-neutral-100 px-4 py-4">
+<div class="sticky top-0 flex h-dvh w-full flex-col overflow-y-auto bg-neutral-100 px-4 py-4">
     <div class="px-3.5">
         <a href="/" class="inline-flex items-center" aria-label="Proval home">
             <ProvalMark
@@ -99,5 +100,8 @@
                 </ul>
             </div>
         {/each}
+    </div>
+    <div class="mt-auto flex pt-6">
+        <ThemeToggle side="top" align="start" />
     </div>
 </div>
