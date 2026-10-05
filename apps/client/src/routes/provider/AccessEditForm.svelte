@@ -5,6 +5,7 @@
     import Card from "$lib/components/layout/Card.svelte";
     import FormField from "$lib/components/molecule/FormField.svelte";
     import Select from "$lib/components/atom/Select.svelte";
+    import Radio from "$lib/components/atom/Radio.svelte";
     import SimpleSelectCard from "$lib/components/atom/SimpleSelectCard.svelte";
     import FieldTitle from "$lib/components/atom/FieldTitle.svelte";
     import Description from "$lib/components/atom/Description.svelte";
@@ -291,27 +292,17 @@
                 {#if item.provider === "gitlab"}
                     <FormField label="Webhook token type" linkLabelToControl={false}>
                         {#snippet children({ id })}
-                            <div {id} class="flex flex-wrap gap-x-6 gap-y-2" role="radiogroup">
-                                <label
-                                    class="flex cursor-pointer items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
-                                    <input
-                                        class="accent-primary"
-                                        type="radio"
-                                        name="{id}-token"
-                                        value="secret"
-                                        bind:group={webhookTokenType} />
-                                    Secret token
-                                </label>
-                                <label
-                                    class="flex cursor-pointer items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
-                                    <input
-                                        class="accent-primary"
-                                        type="radio"
-                                        name="{id}-token"
-                                        value="signing"
-                                        bind:group={webhookTokenType} />
-                                    Signing token
-                                </label>
+                            <div {id} class="flex flex-wrap gap-x-8 gap-y-3" role="radiogroup">
+                                <Radio
+                                    name="{id}-token"
+                                    bind:group={webhookTokenType}
+                                    value="secret"
+                                    label="Secret token" />
+                                <Radio
+                                    name="{id}-token"
+                                    bind:group={webhookTokenType}
+                                    value="signing"
+                                    label="Signing token" />
                             </div>
                         {/snippet}
                     </FormField>
