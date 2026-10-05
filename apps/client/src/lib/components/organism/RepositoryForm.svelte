@@ -202,7 +202,7 @@
     });
 
     const selectClass =
-        "h-10 w-full rounded-lg border border-input bg-input-background px-4 text-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50  ";
+        "h-10 w-full rounded-lg border border-input bg-input-background px-4 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50";
 
     const reviewPushOptionList: ReviewPushOption[] = [
         {
