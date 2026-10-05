@@ -13,6 +13,7 @@
     let { open = $bindable(false), onclose, closeOnOverlayClick = true, class: className, children }: Props = $props();
 
     let dialogEl: HTMLDialogElement;
+    let isOverlayClick = false;
 
     function handleClose() {
         open = false;
@@ -35,8 +36,19 @@
         e.preventDefault();
         handleClose();
     }}
+    onpointerdown={(e) => {
+        isOverlayClick = e.button === 0 && e.target === dialogEl;
+    }}
+    onpointerup={(e) => {
+        isOverlayClick = isOverlayClick && e.target === dialogEl;
+    }}
+    onpointercancel={() => {
+        isOverlayClick = false;
+    }}
     onclick={(e) => {
-        if (closeOnOverlayClick && e.target === dialogEl) {
+        const shouldClose = closeOnOverlayClick && isOverlayClick && e.target === dialogEl;
+        isOverlayClick = false;
+        if (shouldClose) {
             handleClose();
         }
     }}>
