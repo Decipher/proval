@@ -289,13 +289,32 @@
         <div class="space-y-6">
             <Card title="Default Config" spaceY>
                 {#if item.provider === "gitlab"}
-                    <Select
-                        label="Webhook token type"
-                        bind:value={webhookTokenType}
-                        options={[
-                            { value: "secret", label: "Secret token" },
-                            { value: "signing", label: "Signing token" },
-                        ]} />
+                    <FormField label="Webhook token type" linkLabelToControl={false}>
+                        {#snippet children({ id })}
+                            <div {id} class="flex flex-wrap gap-x-6 gap-y-2" role="radiogroup">
+                                <label
+                                    class="flex cursor-pointer items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
+                                    <input
+                                        class="accent-primary"
+                                        type="radio"
+                                        name="{id}-token"
+                                        value="secret"
+                                        bind:group={webhookTokenType} />
+                                    Secret token
+                                </label>
+                                <label
+                                    class="flex cursor-pointer items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
+                                    <input
+                                        class="accent-primary"
+                                        type="radio"
+                                        name="{id}-token"
+                                        value="signing"
+                                        bind:group={webhookTokenType} />
+                                    Signing token
+                                </label>
+                            </div>
+                        {/snippet}
+                    </FormField>
                 {/if}
                 {#if item.provider === "gitlab" && webhookTokenType === "signing"}
                     <FormField
