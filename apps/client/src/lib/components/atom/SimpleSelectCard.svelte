@@ -15,9 +15,7 @@
     type="button"
     class={twMerge(
         `flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors`,
-        selected
-            ? "border-primary bg-primary/5"
-            : "border-neutral-200 bg-white hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800",
+        selected ? "border-primary bg-primary/5" : "border-border bg-card hover:border-border-strong",
         className,
     )}
     {onclick}
@@ -25,7 +23,7 @@
     <div
         class={twMerge(
             "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-            selected ? "border-primary" : "border-neutral-300",
+            selected ? "border-primary" : "border-border-strong",
         )}>
         {#if selected}
             <div class="h-2.5 w-2.5 rounded-full bg-primary"></div>
@@ -33,15 +31,11 @@
     </div>
 
     <div class="flex min-w-0 flex-col">
-        <span
-            class={twMerge(
-                "text-sm font-medium",
-                selected ? "text-primary" : "text-neutral-700 dark:text-neutral-200",
-            )}>
+        <span class={twMerge("text-sm font-medium", selected ? "text-primary" : "text-foreground")}>
             {label}
         </span>
         {#if description}
-            <span class="mt-0.5 text-xs text-neutral-500">{description}</span>
+            <span class="mt-0.5 text-xs text-muted-foreground">{description}</span>
         {/if}
     </div>
 </button>

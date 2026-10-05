@@ -16,16 +16,16 @@
     <div class="flex min-w-0 items-center gap-3">
         <GitProviderIcon provider="github" boxed />
         <div class="min-w-0">
-            <p class="truncate font-medium text-neutral-800">
+            <p class="truncate font-medium text-foreground">
                 {installation.accountName || `Account #${installation.installationId}`}
             </p>
-            <p class="truncate text-sm text-neutral-500">
+            <p class="truncate text-sm text-muted-foreground">
                 {installation.accountType}
             </p>
         </div>
     </div>
     <button
-        class="rounded p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600"
+        class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive-muted hover:text-destructive"
         onclick={onDelete}>
         <TrashIcon class="size-4" />
     </button>

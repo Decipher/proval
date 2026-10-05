@@ -12,7 +12,7 @@
 </script>
 
 {#snippet addRepositoryAction()}
-    <Button href="/repository/create" size="sm" class="gap-1.5 text-neutral-900 hover:text-neutral-900/70">
+    <Button href="/repository/create" size="sm" class="gap-1.5 text-foreground hover:text-foreground/70">
         <PlusIcon class="size-4" />
         Add Repository
     </Button>
@@ -20,8 +20,8 @@
 
 <DefaultLayout title="Repository" actions={addRepositoryAction}>
     {#if data.repositoryList.length === 0}
-        <div class="rounded-lg border border-neutral-200 bg-white px-6 py-14 text-center">
-            <p class="text-sm text-neutral-500">No repositories connected yet.</p>
+        <div class="rounded-lg border border-border bg-card px-6 py-14 text-center">
+            <p class="text-sm text-muted-foreground">No repositories connected yet.</p>
             <Button primary href="/repository/create" size="sm" class="mt-4 gap-1.5">
                 <PlusIcon class="size-4" />
                 Add your first repository
@@ -45,16 +45,16 @@
                 {#snippet header()}
                     <div class="flex items-center justify-between">
                         <div class="ml-1.5 flex min-w-0 flex-col gap-0.5">
-                            <span class="truncate text-sm text-neutral-800">{repository.path}</span>
+                            <span class="truncate text-sm text-foreground">{repository.path}</span>
                             {#if subtitle}
-                                <span class="truncate text-xs text-neutral-500">{subtitle}</span>
+                                <span class="truncate text-xs text-muted-foreground">{subtitle}</span>
                             {/if}
                         </div>
                         {#if repository.lastUsedAt}
-                            <span class="text-sm text-neutral-500"
+                            <span class="text-sm text-muted-foreground"
                                 >Last activity: {formatTimeAgo(repository.lastUsedAt)}</span>
                         {:else}
-                            <span class="text-sm text-neutral-500">Not used</span>
+                            <span class="text-sm text-muted-foreground">Not used</span>
                         {/if}
                     </div>
                 {/snippet}

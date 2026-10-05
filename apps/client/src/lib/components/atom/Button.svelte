@@ -34,15 +34,15 @@
 
     let buttonClass = $derived(
         twMerge(
-            "inline-flex cursor-pointer items-center justify-center rounded-lg text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:outline-none",
+            "inline-flex cursor-pointer items-center justify-center rounded-lg text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
             size === "md" && "h-10",
             size === "sm" && "h-8",
             !text && size === "md" && "px-4",
             !text && size === "sm" && "px-3",
             text && "w-auto px-0",
-            primary && "bg-primary text-white hover:bg-primary/90",
-            secondary && "border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50",
-            text && "text-neutral-500 hover:text-neutral-700",
+            primary && "bg-primary text-primary-foreground hover:bg-primary/90",
+            secondary && "border border-border bg-card text-secondary-foreground hover:bg-accent",
+            text && "text-muted-foreground hover:text-foreground",
             disabled && "pointer-events-none opacity-50",
         ),
     );

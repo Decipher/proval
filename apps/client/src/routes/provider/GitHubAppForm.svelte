@@ -150,7 +150,7 @@
     }
 </script>
 
-<h3 class="mb-4 text-lg font-semibold tracking-tight dark:text-neutral-50">{title}</h3>
+<h3 class="mb-4 text-lg font-semibold tracking-tight">{title}</h3>
 
 {#if step === "mode"}
     <div class="space-y-4">
@@ -212,7 +212,7 @@
                     {id}
                     bind:value={manualPrivateKey}
                     rows="6"
-                    class="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-2 font-mono text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                    class="w-full rounded-lg border border-input bg-input-background px-4 py-2 font-mono text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea>
             {/snippet}
         </FormField>
@@ -229,8 +229,7 @@
             {/snippet}
         </FormField>
         {#if manualWebhookHint}
-            <div
-                class="flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-600 dark:bg-neutral-900">
+            <div class="flex items-center gap-2 rounded-lg bg-background px-3 py-2 text-sm text-secondary-foreground">
                 <span class="min-w-0 flex-1 truncate font-mono text-xs">{manualWebhookHint}</span>
                 <Button text onclick={copyWebhookHint} class="shrink-0 text-xs">Copy</Button>
             </div>
@@ -238,8 +237,8 @@
         {#if testResult}
             <div
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm {testResult.success
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-red-50 text-red-700'}">
+                    ? 'bg-success-muted text-success'
+                    : 'bg-destructive-muted text-destructive'}">
                 <span class="font-medium">{testResult.success ? "Connected" : "Failed"}:</span>
                 {testResult.message}
             </div>

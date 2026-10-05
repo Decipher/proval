@@ -101,7 +101,7 @@
     );
 
     const selectClass =
-        "h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800";
+        "h-10 w-full rounded-lg border border-input bg-input-background px-4 text-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50  ";
 
     const canSubmit = $derived.by(() => {
         if (!formName.trim() || !formBaseUrl.trim()) {
@@ -271,9 +271,7 @@
     </Card>
 
     <div class="flex items-center justify-between gap-3">
-        <h3 class="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            Automatic repository registration
-        </h3>
+        <h3 class="text-lg font-semibold tracking-tight text-foreground">Automatic repository registration</h3>
         <ToggleSwitch bind:checked={autoCreateEnabled} />
     </div>
 
@@ -283,7 +281,7 @@
                 ? "Configure this webhook URL and a matching secret or signing token. Proval registers the project on the first merge request, issue, or comment when this connection token can access the project."
                 : "Share this webhook URL and secret. Proval registers the repository on the first pull request, issue, or comment when the webhook is set and this connection token can access the repository."}
         </Description>
-        <p class="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+        <p class="font-mono text-xs text-secondary-foreground">
             http://&lt;your-server&gt;:7901{webhookPath}
         </p>
 
@@ -292,7 +290,7 @@
                 {#if item.provider === "gitlab"}
                     <FormField label="Webhook token type" linkLabelToControl={false}>
                         {#snippet children({ id })}
-                            <div {id} class="ml-1 mt-2 flex flex-wrap gap-x-8 gap-y-3" role="radiogroup">
+                            <div {id} class="mt-2 ml-1 flex flex-wrap gap-x-8 gap-y-3" role="radiogroup">
                                 <Radio
                                     name="{id}-token"
                                     bind:group={webhookTokenType}
@@ -350,26 +348,25 @@
                             disabled={!selectedModelProviderId}
                             onclick={toggleModelPicker}
                             class="{selectClass} text-left {selectedModelProviderId ? 'cursor-pointer' : ''} {modelName
-                                ? 'text-neutral-900 dark:text-neutral-100'
-                                : 'text-neutral-400 dark:text-neutral-500'}">
+                                ? 'text-foreground'
+                                : 'text-muted-foreground'}">
                             {modelName || "anthropic/claude-sonnet-4.6"}
                         </button>
                     {/snippet}
                 </FormField>
                 {#if modelPickerOpen}
-                    <div class="space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+                    <div class="space-y-3 rounded-xl border border-border p-4">
                         <InputText placeholder="anthropic/claude-sonnet-4.6" bind:value={modelNameDraft} />
                         {#if isLoadingModels}
                             <Description>Loading models...</Description>
                         {:else if filteredAvailableModels.length > 0}
-                            <div
-                                class="max-h-72 overflow-y-auto rounded-lg border border-neutral-200 p-1 dark:border-neutral-700">
+                            <div class="max-h-72 overflow-y-auto rounded-lg border border-border p-1">
                                 <ul class="space-y-1">
                                     {#each filteredAvailableModels as model (model.id)}
                                         <li>
                                             <button
                                                 type="button"
-                                                class="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                                                class="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
                                                 onclick={() => selectModelFromList(model.id)}>
                                                 {model.id}
                                             </button>
@@ -402,7 +399,7 @@
 
             <Card spaceY>
                 <div class="flex items-center justify-between gap-2">
-                    <h3 class="text-base font-medium text-neutral-800 dark:text-white">Pull request</h3>
+                    <h3 class="text-base font-medium text-foreground">Pull request</h3>
                     <ToggleSwitch bind:checked={prEnabled} />
                 </div>
                 <div class="space-y-6 {!prEnabled ? 'pointer-events-none opacity-40' : ''}">
@@ -463,7 +460,7 @@
 
             <Card spaceY>
                 <div class="flex items-center justify-between gap-2">
-                    <h3 class="text-base font-medium text-neutral-800 dark:text-white">Issue</h3>
+                    <h3 class="text-base font-medium text-foreground">Issue</h3>
                     <ToggleSwitch bind:checked={issueEnabled} />
                 </div>
                 <div class="space-y-6 {!issueEnabled ? 'pointer-events-none opacity-40' : ''}">

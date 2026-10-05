@@ -13,7 +13,7 @@
 
 <p
     class={twMerge(
-        placement === "above" ? "mb-1.5 text-xs text-neutral-500" : "mt-1.5 ml-1 text-xs text-neutral-500",
+        placement === "above" ? "mb-1.5 text-xs text-muted-foreground" : "mt-1.5 ml-1 text-xs text-muted-foreground",
         className,
     )}>
     {@render children()}

@@ -175,7 +175,7 @@
         <Card title="GitLab" border>
             <div class="space-y-4">
                 {#if gitlabList.length > 0}
-                    <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
+                    <div class="divide-y divide-border">
                         {#each gitlabList as item (item.id)}
                             <AccessItem
                                 {item}
@@ -188,8 +188,10 @@
                     </div>
                 {:else}
                     <div class="flex flex-col items-center py-2 text-center">
-                        <p class="text-neutral-600">No GitLab access configurations</p>
-                        <p class="mt-1 text-sm text-neutral-400">Add a GitLab access token to connect repositories</p>
+                        <p class="text-secondary-foreground">No GitLab access configurations</p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Add a GitLab access token to connect repositories
+                        </p>
                         <Button primary onclick={() => openAddModal("gitlab")} class="mt-4">
                             Add GitLab connection
                         </Button>
@@ -207,7 +209,7 @@
         <Card title="Forgejo" border>
             <div class="space-y-4">
                 {#if forgejoList.length > 0}
-                    <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
+                    <div class="divide-y divide-border">
                         {#each forgejoList as item (item.id)}
                             <AccessItem
                                 {item}
@@ -220,8 +222,10 @@
                     </div>
                 {:else}
                     <div class="flex flex-col items-center py-2 text-center">
-                        <p class="text-neutral-600">No Forgejo access configurations</p>
-                        <p class="mt-1 text-sm text-neutral-400">Add a Forgejo access token to connect repositories</p>
+                        <p class="text-secondary-foreground">No Forgejo access configurations</p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Add a Forgejo access token to connect repositories
+                        </p>
                         <Button primary onclick={() => openAddModal("forgejo")} class="mt-4">
                             Add Forgejo connection
                         </Button>

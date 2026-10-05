@@ -202,7 +202,7 @@
     });
 
     const selectClass =
-        "h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800";
+        "h-10 w-full rounded-lg border border-input bg-input-background px-4 text-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50  ";
 
     const reviewPushOptionList: ReviewPushOption[] = [
         {
@@ -374,7 +374,7 @@
                 </div>
             </div>
             <div class="flex min-w-0 items-center justify-between gap-2">
-                <p class="truncate text-sm text-neutral-800 dark:text-neutral-200">
+                <p class="truncate text-sm text-foreground">
                     {path ?? "—"}
                 </p>
             </div>
@@ -478,8 +478,8 @@
                         disabled={!selectedModelProviderId}
                         onclick={openModelModal}
                         class="{selectClass} text-left {selectedModelProviderId ? 'cursor-pointer' : ''} {modelName
-                            ? 'text-neutral-900 dark:text-neutral-100'
-                            : 'text-neutral-400 dark:text-neutral-500'}">
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'}">
                         {modelName || "anthropic/claude-sonnet-4.6"}
                     </button>
                 {/snippet}
@@ -507,9 +507,9 @@
                     maxlength={USER_PROMPT_MAX_LENGTH}
                     placeholder="Ignore the lack of test coverage."
                     rows={4}
-                    class="w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                    class="w-full resize-y rounded-lg border border-input bg-input-background px-4 py-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 ></textarea>
-                <p class="mt-1 text-right text-xs text-neutral-500 dark:text-neutral-400">
+                <p class="mt-1 text-right text-xs text-muted-foreground">
                     {userPromptLength}/{USER_PROMPT_MAX_LENGTH}
                 </p>
             {/snippet}
@@ -518,7 +518,7 @@
 
     <Card spaceY>
         <div class="flex items-center justify-between gap-2">
-            <h3 class="text-base font-medium text-neutral-800 dark:text-white">Pull request</h3>
+            <h3 class="text-base font-medium text-foreground">Pull request</h3>
             <ToggleSwitch bind:checked={prEnabled} />
         </div>
         <div class="space-y-6 {!prEnabled ? 'pointer-events-none opacity-40' : ''}">
@@ -583,7 +583,7 @@
     </Card>
     <Card spaceY>
         <div class="flex items-center justify-between gap-2">
-            <h3 class="text-base font-medium text-neutral-800 dark:text-white">Issue</h3>
+            <h3 class="text-base font-medium text-foreground">Issue</h3>
             <ToggleSwitch bind:checked={issueEnabled} />
         </div>
         <div class="space-y-6 {!issueEnabled ? 'pointer-events-none opacity-40' : ''}">
@@ -678,7 +678,7 @@
         {#if isLoadingModels}
             <Description>Loading models...</Description>
         {:else if availableModels.length > 0}
-            <div class="h-72 overflow-y-auto rounded-xl border border-neutral-200 p-1 dark:border-neutral-700">
+            <div class="h-72 overflow-y-auto rounded-xl border border-border p-1">
                 {#if filteredAvailableModels.length === 0}
                     <div class="flex h-full items-center justify-center px-3">
                         <Description class="text-center">
@@ -691,10 +691,10 @@
                             <li>
                                 <button
                                     type="button"
-                                    class="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 {modelNameDraft ===
+                                    class="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent {modelNameDraft ===
                                     m.id
-                                        ? 'bg-primary/10 text-neutral-900 dark:text-neutral-100'
-                                        : 'text-neutral-800 dark:text-neutral-200'}"
+                                        ? 'bg-primary/10 text-foreground'
+                                        : 'text-foreground'}"
                                     onclick={() => selectModelFromList(m.id)}>
                                     {m.id}
                                 </button>

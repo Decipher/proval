@@ -35,14 +35,12 @@
     <div class="space-y-6">
         <div class="space-y-2">
             <div class="flex items-center justify-between gap-4 text-sm">
-                <p class="text-neutral-600 dark:text-neutral-400">
-                    Complete these steps to start automated code reviews.
-                </p>
-                <span class="shrink-0 font-medium text-neutral-800 dark:text-neutral-200">
+                <p class="text-secondary-foreground">Complete these steps to start automated code reviews.</p>
+                <span class="shrink-0 font-medium text-foreground">
                     {completedCount} of {totalCount} complete
                 </span>
             </div>
-            <div class="h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+            <div class="h-1.5 overflow-hidden rounded-full bg-border">
                 <div
                     class="h-full rounded-full bg-primary transition-all duration-300"
                     style="width: {progressPercent}%">
@@ -50,7 +48,7 @@
             </div>
         </div>
 
-        <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
+        <div class="divide-y divide-border">
             {#each steps as step (step.id)}
                 <div
                     class="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
@@ -58,26 +56,26 @@
                         {#if step.status === "complete"}
                             <CheckCircleIcon weight="fill" class="mt-0.5 size-5 shrink-0 text-primary" />
                         {:else if step.status === "blocked"}
-                            <LockIcon class="mt-0.5 size-5 shrink-0 text-neutral-400" />
+                            <LockIcon class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                         {:else}
                             <CircleIcon
                                 class="mt-0.5 size-5 shrink-0 {step.status === 'current'
                                     ? 'text-primary'
-                                    : 'text-neutral-300 dark:text-neutral-600'}" />
+                                    : 'text-border-strong'}" />
                         {/if}
 
                         <div class="min-w-0 space-y-0.5">
                             <p
                                 class="text-sm font-medium {step.status === 'complete'
-                                    ? 'text-neutral-500'
-                                    : 'text-neutral-800 dark:text-neutral-100'}">
+                                    ? 'text-muted-foreground'
+                                    : 'text-foreground'}">
                                 {step.title}
                             </p>
-                            <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                            <p class="text-sm text-muted-foreground">
                                 {step.description}
                             </p>
                             {#if step.blocked && step.blockedReason}
-                                <p class="text-xs text-neutral-400">{step.blockedReason}</p>
+                                <p class="text-xs text-muted-foreground">{step.blockedReason}</p>
                             {/if}
                         </div>
                     </div>

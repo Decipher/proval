@@ -28,9 +28,7 @@
     let isTesting = $state(false);
     let testResult = $state<{ success: boolean; message: string } | null>(null);
 
-    const title = $derived(
-        formProvider === "gitlab" ? "Add GitLab connection" : "Add Forgejo connection",
-    );
+    const title = $derived(formProvider === "gitlab" ? "Add GitLab connection" : "Add Forgejo connection");
 
     const accessFormNamePlaceholder = $derived(formProvider === "gitlab" ? "Production GitLab" : "Team Forgejo");
     const accessFormBaseUrlPlaceholder = $derived(
@@ -75,7 +73,7 @@
     }
 </script>
 
-<h3 class="mb-4 text-lg font-semibold tracking-tight dark:text-neutral-50">
+<h3 class="mb-4 text-lg font-semibold tracking-tight">
     {title}
 </h3>
 <div class="space-y-4">
@@ -104,8 +102,8 @@
     {#if testResult}
         <div
             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm {testResult.success
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-red-50 text-red-700'}">
+                ? 'bg-success-muted text-success'
+                : 'bg-destructive-muted text-destructive'}">
             <span class="font-medium">{testResult.success ? "Connected" : "Failed"}:</span>
             {testResult.message}
         </div>

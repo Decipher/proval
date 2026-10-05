@@ -101,12 +101,12 @@
                 <div class="flex items-center">
                     <div
                         class="flex h-8 w-8 items-center justify-center rounded-full {step >= s
-                            ? 'bg-primary text-white'
-                            : 'bg-neutral-200 text-neutral-500 dark:bg-neutral-700'}">
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-border text-muted-foreground'}">
                         {s}
                     </div>
                     {#if s < 2}
-                        <div class="h-0.5 w-8 {step > s ? 'bg-primary' : 'bg-neutral-200 dark:bg-neutral-700'}"></div>
+                        <div class="h-0.5 w-8 {step > s ? 'bg-primary' : 'bg-border'}"></div>
                     {/if}
                 </div>
             {/each}
@@ -115,7 +115,7 @@
         {#if step === 1}
             <Card title="Step 1: Git Repository">
                 <div class="space-y-4">
-                    <p class="text-sm text-neutral-600 dark:text-neutral-400">Choose your git repository</p>
+                    <p class="text-sm text-secondary-foreground">Choose your git repository</p>
                     <div class="flex flex-col gap-2">
                         {#each data.providerOptionList as option}
                             <button
@@ -123,12 +123,12 @@
                                 class="flex items-center gap-3 rounded-lg border p-3 text-left transition-colors {selectedProviderOption?.label ===
                                     option.label && selectedProviderOption?.type === option.type
                                     ? 'border-primary bg-primary/10'
-                                    : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}"
+                                    : 'border-border hover:border-border-strong'}"
                                 onclick={() => (selectedProviderOption = option)}>
                                 <GitProviderIcon provider={option.type} />
                                 <div class="min-w-0 flex-1">
                                     <div class="font-medium">{option.label}</div>
-                                    <div class="text-sm text-neutral-500">
+                                    <div class="text-sm text-muted-foreground">
                                         {#if option.type === "gitlab" || option.type === "forgejo"}
                                             {option.type} · {option.baseUrl}
                                         {:else}

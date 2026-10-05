@@ -306,8 +306,8 @@
             {#if testResult}
                 <div
                     class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm {testResult.success
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-red-50 text-red-700'}">
+                        ? 'bg-success-muted text-success'
+                        : 'bg-destructive-muted text-destructive'}">
                     <span class="font-medium">{testResult.success ? "Connected" : "Failed"}:</span>
                     {testResult.message}
                 </div>

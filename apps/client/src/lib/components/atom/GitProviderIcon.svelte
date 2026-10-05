@@ -21,19 +21,16 @@
     };
 
     const icon = $derived(icons[provider]);
+    const fill = $derived(provider === "github" ? "currentColor" : `#${icon.hex}`);
 </script>
 
 {#if boxed}
-    <div
-        class={twMerge(
-            "flex size-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800",
-            className,
-        )}>
+    <div class={twMerge("flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted", className)}>
         <svg
-            class={twMerge("size-5 shrink-0", iconClass)}
+            class={twMerge("size-5 shrink-0 text-foreground", iconClass)}
             {style}
             viewBox="0 0 24 24"
-            fill={`#${icon.hex}`}
+            {fill}
             aria-label={icon.title}
             role="img">
             <path d={icon.path} />
@@ -41,10 +38,10 @@
     </div>
 {:else}
     <svg
-        class={twMerge("size-5 shrink-0", className)}
+        class={twMerge("size-5 shrink-0 text-foreground", className)}
         {style}
         viewBox="0 0 24 24"
-        fill={`#${icon.hex}`}
+        {fill}
         aria-label={icon.title}
         role="img">
         <path d={icon.path} />

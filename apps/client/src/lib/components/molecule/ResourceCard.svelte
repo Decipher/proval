@@ -18,11 +18,11 @@
 
     const cardClass = $derived(
         twMerge(
-            "block bg-white transition-colors",
-            embedded ? "border-b border-neutral-200 last:border-b-0" : "rounded-lg border border-neutral-200",
+            "block bg-card text-card-foreground transition-colors",
+            embedded ? "border-b border-border last:border-b-0" : "rounded-lg border border-border",
             compact ? "px-4 py-2.5" : "p-4",
-            href && !embedded && "hover:border-neutral-300 hover:bg-neutral-50",
-            href && embedded && "hover:bg-neutral-50",
+            href && !embedded && "hover:border-border-strong hover:bg-accent",
+            href && embedded && "hover:bg-accent",
             className,
         ),
     );

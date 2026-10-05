@@ -25,6 +25,15 @@ function applyTheme(value: Theme) {
     const dark = value === "dark" || (value === "system" && window.matchMedia(SYSTEM_QUERY).matches);
     document.documentElement.classList.toggle("dark", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
+
+    const background = window.getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+    let themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!themeColor) {
+        themeColor = document.createElement("meta");
+        themeColor.name = "theme-color";
+        document.head.append(themeColor);
+    }
+    themeColor.content = background;
 }
 
 export function setTheme(value: Theme) {

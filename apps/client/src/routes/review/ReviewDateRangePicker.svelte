@@ -50,12 +50,12 @@
 </script>
 
 <div class="min-w-0 flex-1 sm:max-w-[14rem]">
-    <p class="mb-1 text-xs font-medium text-neutral-500">Date</p>
+    <p class="mb-1 text-xs font-medium text-muted-foreground">Date</p>
     <div bind:this={containerRef} class="relative">
         <button
             type="button"
             class={twMerge(
-                "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-neutral-200 px-3 text-left text-sm outline-none dark:border-neutral-700",
+                "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border px-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 controlClass,
             )}
             aria-haspopup="dialog"
@@ -64,9 +64,9 @@
                 event.stopPropagation();
                 toggleOpen();
             }}>
-            <span class="min-w-0 truncate text-neutral-900 dark:text-white">{triggerLabel}</span>
+            <span class="min-w-0 truncate text-foreground">{triggerLabel}</span>
             <svg
-                class={twMerge("h-4 w-4 shrink-0 text-neutral-400 transition-transform", open && "rotate-180")}
+                class={twMerge("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 aria-hidden="true">
@@ -78,16 +78,16 @@
         </button>
 
         {#if open}
-            <div class="absolute top-full left-0 z-50 mt-1" role="dialog" aria-label="Choose date range">
+            <div
+                class="absolute top-full left-0 z-50 mt-1 sm:right-0 sm:left-auto"
+                role="dialog"
+                aria-label="Choose date range">
                 {#key `${filter.from}-${filter.to}`}
                     <Calendar from={filter.from} to={filter.to} onRangeChange={updateRange} />
                 {/key}
                 {#if filter.from || filter.to}
                     <div
-                        class={twMerge(
-                            "mt-1 flex justify-end rounded-lg border border-neutral-200 bg-white px-2 py-1.5 shadow-lg dark:border-neutral-700",
-                            controlClass,
-                        )}>
+                        class="mt-1 flex justify-end rounded-lg border border-border bg-popover px-2 py-1.5 text-popover-foreground shadow-lg">
                         <Button text size="sm" onclick={clearRange}>Clear dates</Button>
                     </div>
                 {/if}

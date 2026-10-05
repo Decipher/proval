@@ -10,7 +10,7 @@
     }
     let { forId, class: className, children }: Props = $props();
 
-    const titleClass = "mb-0.5 block text-sm font-medium text-neutral-700";
+    const titleClass = "mb-0.5 block text-sm font-medium text-foreground";
 </script>
 
 {#if forId}

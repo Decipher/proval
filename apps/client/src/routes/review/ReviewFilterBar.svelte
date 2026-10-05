@@ -42,11 +42,9 @@
         typeValue = filter.typeList[0] ?? "";
     });
 
-    const filterControlClass = "bg-white dark:bg-white";
+    const filterControlClass = "border-input bg-input-background text-foreground";
 
-    const sortedRepositoryList = $derived(
-        [...repositoryList].sort((a, b) => a.path.localeCompare(b.path)),
-    );
+    const sortedRepositoryList = $derived([...repositoryList].sort((a, b) => a.path.localeCompare(b.path)));
 
     const repositoryLabel = $derived.by(() => {
         const count = filter.repositoryIdList.length;
@@ -113,8 +111,7 @@
                 bind:value={statusValue}
                 onValueChange={onStatusValueChange}
                 placeholder="All"
-                class={filterControlClass}
-                menuClass={filterControlClass} />
+                class={filterControlClass} />
         </div>
         <div class="min-w-0 flex-1 sm:max-w-[11rem]">
             <Select
@@ -123,24 +120,26 @@
                 bind:value={typeValue}
                 onValueChange={onTypeValueChange}
                 placeholder="All"
-                class={filterControlClass}
-                menuClass={filterControlClass} />
+                class={filterControlClass} />
         </div>
         <div class="min-w-0 flex-1 sm:max-w-xs">
-            <p class="mb-1 text-xs font-medium text-neutral-500">Repository</p>
+            <p class="mb-1 text-xs font-medium text-muted-foreground">Repository</p>
             <div bind:this={repositoryContainerRef} class="relative">
                 <button
                     type="button"
                     class={twMerge(
-                        "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-neutral-200 px-3 text-left text-sm outline-none dark:border-neutral-700",
+                        "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border px-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                         filterControlClass,
                     )}
                     aria-haspopup="listbox"
                     aria-expanded={repositoryOpen}
                     onclick={toggleRepositoryMenu}>
-                    <span class="min-w-0 truncate text-neutral-900 dark:text-white">{repositoryLabel}</span>
+                    <span class="min-w-0 truncate text-foreground">{repositoryLabel}</span>
                     <svg
-                        class={twMerge("h-4 w-4 shrink-0 text-neutral-400 transition-transform", repositoryOpen && "rotate-180")}
+                        class={twMerge(
+                            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                            repositoryOpen && "rotate-180",
+                        )}
                         viewBox="0 0 20 20"
                         fill="currentColor"
                         aria-hidden="true">
@@ -152,14 +151,11 @@
                 </button>
                 {#if repositoryOpen}
                     <ul
-                        class={twMerge(
-                            "absolute top-full z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-neutral-200 shadow-lg dark:border-neutral-700",
-                            filterControlClass,
-                        )}
+                        class="absolute top-full z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
                         role="listbox"
                         aria-label="Repository filter">
                         {#if sortedRepositoryList.length === 0}
-                            <li class="px-3 py-2 text-sm text-neutral-500">No repositories</li>
+                            <li class="px-3 py-2 text-sm text-muted-foreground">No repositories</li>
                         {:else}
                             {#each sortedRepositoryList as repo (repo.id)}
                                 {@const selected = filter.repositoryIdList.includes(repo.id)}
@@ -169,8 +165,8 @@
                                         role="option"
                                         aria-selected={selected}
                                         class={twMerge(
-                                            "flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700",
-                                            selected && "bg-primary/5",
+                                            "flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent",
+                                            selected && "bg-primary/10",
                                         )}
                                         onclick={(event) => {
                                             event.stopPropagation();
@@ -181,7 +177,7 @@
                                                 "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                                                 selected
                                                     ? "border-primary bg-primary text-primary-foreground"
-                                                    : "border-neutral-300 dark:border-neutral-600",
+                                                    : "border-border-strong",
                                             )}
                                             aria-hidden="true">
                                             {#if selected}
@@ -203,7 +199,7 @@
             </div>
         </div>
 
-        <ReviewDateRangePicker filter={filter} controlClass={filterControlClass} onFilterChange={updateFilter} />
+        <ReviewDateRangePicker {filter} controlClass={filterControlClass} onFilterChange={updateFilter} />
 
         {#if showClear}
             <div class="sm:pb-0.5">

@@ -15,10 +15,10 @@
     const { variant = "neutral", class: className, children }: Props = $props();
 
     const variantClass: Record<BadgeVariant, string> = {
-        neutral: "bg-neutral-100 text-neutral-600",
-        success: "bg-emerald-50 text-emerald-700",
-        warning: "bg-amber-50 text-amber-700",
-        danger: "bg-red-50 text-red-700",
+        neutral: "bg-muted text-secondary-foreground",
+        success: "bg-success-muted text-success",
+        warning: "bg-warning-muted text-warning",
+        danger: "bg-destructive-muted text-destructive",
         primary: "bg-primary/10 text-primary",
     };
 </script>
