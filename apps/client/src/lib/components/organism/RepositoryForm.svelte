@@ -1,12 +1,13 @@
 <script lang="ts">
     import InputText from "../atom/InputText.svelte";
     import fetchApi from "$lib/utils";
-    import { USER_PROMPT_MAX_LENGTH } from "@proval/types";
+    import { reasoningEffortValueList, USER_PROMPT_MAX_LENGTH } from "@proval/types";
     import type {
         ModelProviderModelListResponse,
         ModelProviderResponse,
         ProviderOption,
         PrReviewOnPush,
+        ReasoningEffort,
         RepositoryInsert,
         RepositorySelectItem,
         RepositoryUpdateInput,
@@ -28,6 +29,7 @@
     interface Config {
         modelProviderId: number | null;
         modelName: string | null;
+        reasoningEffort: ReasoningEffort;
         repositoryId: number | null; // repository id from github/gitlab/forgejo for selection
 
         description: string | null;
@@ -92,6 +94,18 @@
 
     let selectedModelProviderId = $state<string>(String(config.modelProviderId ?? ""));
     let modelName = $state<string>(config.modelName ?? "");
+    let reasoningEffort = $state<string>(config.reasoningEffort ?? "");
+
+    const reasoningEffortSelectOptionList = [
+        {
+            value: "",
+            label: "Default",
+        },
+        ...reasoningEffortValueList.map((value) => ({
+            value,
+            label: value,
+        })),
+    ];
     let availableModels = $state<{ id: string }[]>([]);
     let isLoadingModels = $state(false);
     let selectedRepositoryId = $state<string>(String(config.repositoryId ?? ""));
@@ -288,6 +302,7 @@
             language,
             modelProviderId: Number(selectedModelProviderId),
             modelName: modelName.trim(),
+            reasoningEffort: reasoningEffort === "" ? null : (reasoningEffort as NonNullable<ReasoningEffort>),
             prEnabled,
             prMinAccessLevel: Number(prMinAccessLevel),
             prReviewEnabled,
@@ -459,6 +474,13 @@
                     </button>
                 {/snippet}
             </FormField>
+        </div>
+        <div>
+            <Select
+                label="Reasoning effort"
+                description="Chosen value is sent to the model API. (Default sends empty)"
+                bind:value={reasoningEffort}
+                options={reasoningEffortSelectOptionList} />
         </div>
         <div>
             <FormField label="Language" description="Default language for code review">

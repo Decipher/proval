@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7a0bfc18-6e0d-4d7e-a581-260a0e0abc60",
-  "prevId": "dfd397da-8eed-4c60-8402-7835b277a68d",
+  "id": "1247790a-6e09-456d-a4ab-5ff4c5b81ec4",
+  "prevId": "7a0bfc18-6e0d-4d7e-a581-260a0e0abc60",
   "tables": {
     "activity": {
       "name": "activity",
@@ -328,6 +328,13 @@
         },
         "default_webhook_secret": {
           "name": "default_webhook_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "default_webhook_signing_token": {
+          "name": "default_webhook_signing_token",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -797,7 +804,14 @@
           "name": "webhook_secret",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "webhook_signing_token": {
+          "name": "webhook_signing_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "language": {

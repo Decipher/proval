@@ -1,3 +1,4 @@
+import { reasoningEffortValueList } from "@proval/db";
 import type {
     activityTable,
     repositoryTable,
@@ -10,6 +11,8 @@ import type {
     sessionTable,
 } from "@proval/db";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
+
+export { reasoningEffortValueList };
 
 // Select types (for reading from DB)
 
@@ -90,6 +93,7 @@ export type RepositoryProvider = Repository["provider"];
 export type AccessProvider = Access["provider"];
 export type LlmApiProvider = ModelProvider["provider"];
 export type PrReviewOnPush = Repository["prReviewOnPush"];
+export type ReasoningEffort = Repository["reasoningEffort"];
 
 // Composite / list API types
 export type GitProviderRepositoryListResponse = {

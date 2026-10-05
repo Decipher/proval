@@ -119,6 +119,7 @@ function makeRepositoryRow(overrides: Partial<Repository> = {}): Repository {
         issueMentionOnly: false,
         modelProviderId: null,
         modelName: "test-model",
+        reasoningEffort: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
         ...overrides,
@@ -313,6 +314,14 @@ describe("Update GitLab Repository", () => {
     it("rejects userPrompt when it is not a string", async () => {
         await expect(repositoryService.update(1, { userPrompt: 42 as unknown as string })).rejects.toThrow(
             "Custom instructions must be a string",
+        );
+    });
+
+    it("rejects invalid reasoning effort", async () => {
+        await expect(
+            repositoryService.update(1, { reasoningEffort: "bogus" as "medium" }),
+        ).rejects.toThrow(
+            "Invalid reasoning effort",
         );
     });
 });

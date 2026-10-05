@@ -1,3 +1,4 @@
+import type { ReasoningEffort } from "@proval/types";
 import type { LlmSender } from "./loop.js";
 import { createOpenAiSender } from "./openai.js";
 import { createAnthropicSender } from "./anthropic.js";
@@ -8,6 +9,7 @@ export interface SenderConfig {
     baseURL: string;
     model: string;
     timeoutSecond: number;
+    reasoningEffort?: ReasoningEffort;
 }
 
 export type SenderSDKConfig = Omit<SenderConfig, "provider"> & {

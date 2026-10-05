@@ -578,6 +578,7 @@ export class ActivityService {
             baseURL: modelProvider.baseUrl,
             model: repository.modelName,
             timeoutSecond: modelProvider.timeoutSecond,
+            reasoningEffort: repository.reasoningEffort,
         });
 
         const startInput: ActivityStartInput = {

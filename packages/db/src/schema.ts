@@ -100,6 +100,8 @@ export const gitProviderAccessTable = sqliteTable(
     (table) => [unique().on(table.provider, table.baseUrl)],
 );
 
+export const reasoningEffortValueList = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+
 export const repositoryTable = sqliteTable(
     "repository",
     {
@@ -163,6 +165,7 @@ export const repositoryTable = sqliteTable(
 
         modelProviderId: integer().references(() => modelProviderTable.id),
         modelName: text().notNull().default(""),
+        reasoningEffort: text({ enum: reasoningEffortValueList }),
 
         ...timeStamp,
     },
