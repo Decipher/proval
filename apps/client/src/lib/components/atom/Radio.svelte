@@ -28,7 +28,7 @@
             {disabled}
             bind:group={group} />
         <span
-            class="pointer-events-none absolute inset-0 rounded-full border-2 border-neutral-300 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-neutral-50 peer-checked:border-primary dark:border-neutral-600 dark:peer-focus-visible:ring-offset-neutral-900"
+            class="pointer-events-none absolute inset-0 rounded-full border-2 border-neutral-300 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-inset peer-focus-visible:ring-primary/50 peer-checked:border-primary dark:border-neutral-600"
             aria-hidden="true"></span>
         <span
             class="pointer-events-none absolute inset-0 m-auto h-2.5 w-2.5 rounded-full bg-primary opacity-0 transition-opacity peer-checked:opacity-100"

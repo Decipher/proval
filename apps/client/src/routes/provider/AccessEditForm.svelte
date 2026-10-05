@@ -292,7 +292,7 @@
                 {#if item.provider === "gitlab"}
                     <FormField label="Webhook token type" linkLabelToControl={false}>
                         {#snippet children({ id })}
-                            <div {id} class="flex flex-wrap gap-x-8 gap-y-3" role="radiogroup">
+                            <div {id} class="ml-1 mt-2 flex flex-wrap gap-x-8 gap-y-3" role="radiogroup">
                                 <Radio
                                     name="{id}-token"
                                     bind:group={webhookTokenType}
