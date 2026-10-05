@@ -46,12 +46,16 @@ export type UserInsert = InferInsertModel<typeof userTable>;
 export type SessionInsert = InferInsertModel<typeof sessionTable>;
 
 // API response types (sensitive fields omitted)
-export type RepositoryResponse = Omit<Repository, "webhookSecret" | "accessToken" | "accessTokenId"> & {
+export type RepositoryResponse = Omit<
+    Repository,
+    "webhookSecret" | "webhookSigningToken" | "accessToken" | "accessTokenId"
+> & {
     lastUsedAt: Date | null;
 };
 export type ModelProviderResponse = Omit<ModelProvider, "apiKey">;
-export type AccessResponse = Omit<Access, "accessToken" | "defaultWebhookSecret"> & {
+export type AccessResponse = Omit<Access, "accessToken" | "defaultWebhookSecret" | "defaultWebhookSigningToken"> & {
     hasDefaultWebhookSecret: boolean;
+    hasDefaultWebhookSigningToken: boolean;
 };
 
 export type GitHubAppResponse = Omit<GitHubApp, "privateKey" | "webhookSecret">;
@@ -68,7 +72,9 @@ export type GitHubRepositoryResponse = {
 };
 
 // Update types (for PUT - excludes sensitive fields)
-export type RepositoryUpdateInput = Partial<Omit<RepositoryInsert, "webhookSecret" | "createdAt" | "updatedAt">>;
+export type RepositoryUpdateInput = Partial<
+    Omit<RepositoryInsert, "webhookSecret" | "webhookSigningToken" | "createdAt" | "updatedAt">
+>;
 export type ModelProviderUpdateInput = Partial<Omit<ModelProviderInsert, "apiKey" | "createdAt" | "updatedAt">>;
 export type AccessUpdateInput = Partial<Omit<AccessInsert, "accessToken" | "createdAt" | "updatedAt">>;
 export type GitHubAppUpdateInput = Partial<

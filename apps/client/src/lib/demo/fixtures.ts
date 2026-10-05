@@ -90,6 +90,7 @@ export const accessList: AccessResponse[] = [
         defaultIssueReplyEnabled: null,
         defaultIssueMentionOnly: null,
         hasDefaultWebhookSecret: false,
+        hasDefaultWebhookSigningToken: false,
         createdAt: daysAgo(205),
         updatedAt: minutesAgo(60 * 24 * 3),
     },

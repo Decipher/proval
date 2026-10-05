@@ -3,7 +3,11 @@ import { activityTable, githubAppTable, githubInstallationTable, repositoryTable
 import { desc, eq, getTableColumns, max } from "drizzle-orm";
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
-import { generateUnusedRepositoryWebhookSecret } from "../../util/webhook-secret.js";
+import {
+    normalizeWebhookSecret,
+    normalizeWebhookSigningToken,
+    WebhookCredentialError,
+} from "../../util/webhook-secret.js";
 import { GitLabAccessService } from "../access/access.service.js";
 import { ForgejoProvider } from "../../git-provider/forgejo.js";
 import { GitHubProvider } from "../../git-provider/github.js";
@@ -75,19 +79,26 @@ export class RepositoryService {
         if (Object.hasOwn(data, "userPrompt")) {
             data.userPrompt = this.normalizeUserPrompt(data.userPrompt);
         }
+
         if (Object.hasOwn(data, "reasoningEffort")) {
             data.reasoningEffort = this.normalizeReasoningEffort(data.reasoningEffort);
         }
-        const isGitHub = data.provider === "github";
-        const isWebhookSecretEmpty =
-            data.webhookSecret === undefined || data.webhookSecret === null || data.webhookSecret.trim() === "";
-        const values =
-            isGitHub && isWebhookSecretEmpty
-                ? { ...data, webhookSecret: this.encryptWebhookSecret(generateUnusedRepositoryWebhookSecret()) }
-                : { ...data };
-        if (!isWebhookSecretEmpty && values.webhookSecret) {
-            values.webhookSecret = this.encryptWebhookSecret(values.webhookSecret);
+        const secret = normalizeWebhookSecret(data.webhookSecret);
+        const signingToken = normalizeWebhookSigningToken(data.webhookSigningToken);
+        if (data.provider !== "gitlab" && signingToken) {
+            throw new WebhookCredentialError("Signing token is only configurable for GitLab repositories");
         }
+        if (data.provider === "gitlab" && !secret && !signingToken) {
+            throw new WebhookCredentialError("Webhook secret or signing token is required");
+        }
+        if (data.provider === "forgejo" && !secret) {
+            throw new WebhookCredentialError("Webhook secret is required");
+        }
+        const values = {
+            ...data,
+            webhookSecret: data.provider !== "github" && secret ? this.encryptWebhookSecret(secret) : null,
+            webhookSigningToken: signingToken ? encrypt(signingToken) : null,
+        };
         if (data.provider === "gitlab") {
             if (!data.gitProviderAccessId || !data.gitProviderRepositoryId) {
                 throw new Error("GitLab access ID and repository ID are required");
@@ -141,6 +152,9 @@ export class RepositoryService {
     }
 
     public async update(repositoryId: number, data: RepositoryUpdateInput): Promise<RepositoryResponse> {
+        if (Object.hasOwn(data, "webhookSecret") || Object.hasOwn(data, "webhookSigningToken")) {
+            throw new WebhookCredentialError("Use the dedicated webhook credential update endpoint");
+        }
         const cleanData = this.removeUndefined(data);
         if (Object.hasOwn(cleanData, "userPrompt")) {
             cleanData.userPrompt = this.normalizeUserPrompt(cleanData.userPrompt);
@@ -269,6 +283,15 @@ export class RepositoryService {
             .where(eq(repositoryTable.id, repositoryId));
     }
 
+    public async updateWebhookSigningToken(repositoryId: number, value: unknown): Promise<void> {
+        const token = normalizeWebhookSigningToken(value);
+        if (!token) throw new WebhookCredentialError("Signing token is required");
+        await db
+            .update(repositoryTable)
+            .set({ webhookSigningToken: encrypt(token) })
+            .where(eq(repositoryTable.id, repositoryId));
+    }
+
     public async updatePath(repositoryId: number, path: string): Promise<RepositoryResponse> {
         const trimmed = path.trim();
         if (!trimmed) {
@@ -374,6 +397,7 @@ export class RepositoryService {
     public toResponse(repository: Repository, lastUsedAt: Date | null): RepositoryResponse {
         const {
             webhookSecret: _webhookSecret,
+            webhookSigningToken: _webhookSigningToken,
             accessToken: _accessToken,
             accessTokenId: _accessTokenId,
             ...rest

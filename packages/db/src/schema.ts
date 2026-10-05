@@ -77,6 +77,7 @@ export const gitProviderAccessTable = sqliteTable(
         accessToken: text().notNull(),
         autoCreateEnabled: integer({ mode: "boolean" }).notNull().default(false),
         defaultWebhookSecret: text(),
+        defaultWebhookSigningToken: text(),
         defaultModelProviderId: integer().references(() => modelProviderTable.id, { onDelete: "set null" }),
         defaultModelName: text(),
         defaultLanguage: text(),
@@ -109,7 +110,8 @@ export const repositoryTable = sqliteTable(
         path: text().notNull(),
         description: text(),
         provider: text({ enum: ["gitlab", "github", "forgejo"] }).notNull(),
-        webhookSecret: text().notNull(),
+        webhookSecret: text(),
+        webhookSigningToken: text(),
         language: text().notNull().default("English"),
 
         // github access configs

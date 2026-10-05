@@ -5,6 +5,7 @@
     import Card from "$lib/components/layout/Card.svelte";
     import FormField from "$lib/components/molecule/FormField.svelte";
     import Select from "$lib/components/atom/Select.svelte";
+    import Radio from "$lib/components/atom/Radio.svelte";
     import SimpleSelectCard from "$lib/components/atom/SimpleSelectCard.svelte";
     import FieldTitle from "$lib/components/atom/FieldTitle.svelte";
     import Description from "$lib/components/atom/Description.svelte";
@@ -19,7 +20,7 @@
         PrReviewOnPush,
     } from "@proval/types";
 
-    let {
+    const {
         item,
         modelList,
     }: {
@@ -33,6 +34,8 @@
     let formBaseUrl = $state("");
     let autoCreateEnabled = $state(false);
     let webhookSecret = $state("");
+    let webhookSigningToken = $state("");
+    let webhookTokenType = $state<"secret" | "signing">("secret");
     let selectedModelProviderId = $state("");
     let modelName = $state("");
     let language = $state("English");
@@ -107,8 +110,15 @@
         if (!autoCreateEnabled) {
             return true;
         }
-        const hasSecret = webhookSecret.trim().length > 0 || item.hasDefaultWebhookSecret;
-        return hasSecret && selectedModelProviderId !== "" && modelName.trim() !== "" && language.trim() !== "";
+        const useSigningToken = item.provider === "gitlab" && webhookTokenType === "signing";
+        const hasCredential = useSigningToken
+            ? webhookSigningToken.trim().length > 0 ||
+              item.hasDefaultWebhookSigningToken ||
+              item.hasDefaultWebhookSecret
+            : webhookSecret.trim().length > 0 ||
+              item.hasDefaultWebhookSecret ||
+              (item.provider === "gitlab" && item.hasDefaultWebhookSigningToken);
+        return hasCredential && selectedModelProviderId !== "" && modelName.trim() !== "" && language.trim() !== "";
     });
 
     $effect(() => {
@@ -122,6 +132,11 @@
         formBaseUrl = item.baseUrl;
         autoCreateEnabled = item.autoCreateEnabled;
         webhookSecret = "";
+        webhookSigningToken = "";
+        webhookTokenType =
+            item.provider === "gitlab" && item.hasDefaultWebhookSigningToken && !item.hasDefaultWebhookSecret
+                ? "signing"
+                : "secret";
         selectedModelProviderId = item.defaultModelProviderId != null ? String(item.defaultModelProviderId) : "";
         modelName = item.defaultModelName ?? "";
         language = item.defaultLanguage ?? "English";
@@ -187,15 +202,18 @@
         }
         isSaving = true;
         try {
-            const body: AccessUpdateInput & { defaultWebhookSecret?: string } = {
+            const body: AccessUpdateInput = {
                 name: formName.trim(),
                 baseUrl: formBaseUrl.trim(),
                 autoCreateEnabled,
             };
             if (autoCreateEnabled) {
-                const secretTrimmed = webhookSecret.trim();
-                if (secretTrimmed) {
-                    body.defaultWebhookSecret = secretTrimmed;
+                if (item.provider === "gitlab" && webhookTokenType === "signing") {
+                    const token = webhookSigningToken.trim();
+                    if (token) body.defaultWebhookSigningToken = token;
+                } else {
+                    const secretTrimmed = webhookSecret.trim();
+                    if (secretTrimmed) body.defaultWebhookSecret = secretTrimmed;
                 }
                 body.defaultModelProviderId = Number(selectedModelProviderId);
                 body.defaultModelName = modelName.trim();
@@ -262,7 +280,7 @@
     {#if autoCreateEnabled}
         <Description>
             {item.provider === "gitlab"
-                ? "Share this webhook URL and secret. Proval registers the project on the first merge request, issue, or comment when the webhook is set and this connection token can access the project."
+                ? "Configure this webhook URL and a matching secret or signing token. Proval registers the project on the first merge request, issue, or comment when this connection token can access the project."
                 : "Share this webhook URL and secret. Proval registers the repository on the first pull request, issue, or comment when the webhook is set and this connection token can access the repository."}
         </Description>
         <p class="font-mono text-xs text-neutral-600 dark:text-neutral-400">
@@ -271,17 +289,53 @@
 
         <div class="space-y-6">
             <Card title="Default Config" spaceY>
-                <FormField
-                    label="Webhook secret"
-                    description="Must match the secret in each project webhook. Leave blank to keep the saved secret.">
-                    {#snippet children({ id })}
-                        <InputText
-                            {id}
-                            password
-                            placeholder={item.hasDefaultWebhookSecret ? "Leave blank to keep current secret" : "secret"}
-                            bind:value={webhookSecret} />
-                    {/snippet}
-                </FormField>
+                {#if item.provider === "gitlab"}
+                    <FormField label="Webhook token type" linkLabelToControl={false}>
+                        {#snippet children({ id })}
+                            <div {id} class="ml-1 mt-2 flex flex-wrap gap-x-8 gap-y-3" role="radiogroup">
+                                <Radio
+                                    name="{id}-token"
+                                    bind:group={webhookTokenType}
+                                    value="secret"
+                                    label="Secret token" />
+                                <Radio
+                                    name="{id}-token"
+                                    bind:group={webhookTokenType}
+                                    value="signing"
+                                    label="Signing token" />
+                            </div>
+                        {/snippet}
+                    </FormField>
+                {/if}
+                {#if item.provider === "gitlab" && webhookTokenType === "signing"}
+                    <FormField
+                        label="Signing token"
+                        description="Paste the signing token generated in GitLab for the webhook used to register projects. Leave blank to keep the saved token.">
+                        {#snippet children({ id })}
+                            <InputText
+                                {id}
+                                password
+                                placeholder={item.hasDefaultWebhookSigningToken
+                                    ? "Leave blank to keep current token"
+                                    : "whsec_..."}
+                                bind:value={webhookSigningToken} />
+                        {/snippet}
+                    </FormField>
+                {:else}
+                    <FormField
+                        label="Webhook secret"
+                        description="Must match the secret in each project webhook. Leave blank to keep the saved secret.">
+                        {#snippet children({ id })}
+                            <InputText
+                                {id}
+                                password
+                                placeholder={item.hasDefaultWebhookSecret
+                                    ? "Leave blank to keep current secret"
+                                    : "secret"}
+                                bind:value={webhookSecret} />
+                        {/snippet}
+                    </FormField>
+                {/if}
                 <Select
                     label="Model Provider"
                     description="LLM connection for auto registered repositories"

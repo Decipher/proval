@@ -3,6 +3,11 @@ import type { Access, AccessInsert, AccessProvider, AccessResponse, AccessUpdate
 import db from "../../db";
 import { count, eq, getTableColumns } from "drizzle-orm";
 import { decrypt, encrypt } from "../../util/encrypt.js";
+import {
+    normalizeWebhookSecret,
+    normalizeWebhookSigningToken,
+    WebhookCredentialError,
+} from "../../util/webhook-secret.js";
 
 function isAccessAutoCreateDefaultConfigValueMissing(value: unknown): boolean {
     if (value === null || value === undefined) {
@@ -26,11 +31,14 @@ function normalizeAccessBaseUrl(url: string): string {
 
 export class GitLabAccessService {
     public hasAutoCreateDefaultConfig(access: Access): boolean {
-        if (!access.autoCreateEnabled || !access.defaultWebhookSecret?.trim()) {
+        const hasCredential =
+            access.defaultWebhookSecret?.trim() ||
+            (access.provider === "gitlab" && access.defaultWebhookSigningToken?.trim());
+        if (!access.autoCreateEnabled || !hasCredential) {
             return false;
         }
         for (const key of Object.keys(getTableColumns(gitProviderAccessTable))) {
-            if (!key.startsWith("default") || key === "defaultWebhookSecret") {
+            if (!key.startsWith("default") || key === "defaultWebhookSecret" || key === "defaultWebhookSigningToken") {
                 continue;
             }
             if (isAccessAutoCreateDefaultConfigValueMissing(access[key as keyof Access])) {
@@ -41,10 +49,11 @@ export class GitLabAccessService {
     }
 
     public toResponse(access: Access): AccessResponse {
-        const { accessToken: _accessToken, defaultWebhookSecret, ...rest } = access;
+        const { accessToken: _accessToken, defaultWebhookSecret, defaultWebhookSigningToken, ...rest } = access;
         return {
             ...rest,
             hasDefaultWebhookSecret: Boolean(defaultWebhookSecret?.trim()),
+            hasDefaultWebhookSigningToken: Boolean(defaultWebhookSigningToken?.trim()),
         };
     }
 
@@ -127,10 +136,7 @@ export class GitLabAccessService {
         return this.toResponse(newAccess[0]);
     }
 
-    public async updateById(
-        id: number,
-        input: AccessUpdateInput & { accessToken?: string; defaultWebhookSecret?: string },
-    ): Promise<AccessResponse> {
+    public async updateById(id: number, input: AccessUpdateInput & { accessToken?: string }): Promise<AccessResponse> {
         const existing = await this.findByIdRaw(id);
         const name = input.name?.trim();
         const baseUrl = input.baseUrl?.trim();
@@ -142,6 +148,10 @@ export class GitLabAccessService {
         }
         if (typeof input.autoCreateEnabled !== "boolean") {
             throw new Error("autoCreateEnabled is required");
+        }
+        const signingTokenInput = normalizeWebhookSigningToken(input.defaultWebhookSigningToken);
+        if (existing.provider !== "gitlab" && signingTokenInput) {
+            throw new WebhookCredentialError("Signing token is only configurable for GitLab connections");
         }
 
         const patch: Record<string, unknown> = {
@@ -160,15 +170,27 @@ export class GitLabAccessService {
             );
             Object.assign(patch, { autoCreateEnabled: false, ...clearedDefaultConfigPatch });
         } else {
-            const secretInput = input.defaultWebhookSecret?.trim() ?? "";
+            const secretInput = normalizeWebhookSecret(input.defaultWebhookSecret);
             const existingSecret = existing.defaultWebhookSecret ? decrypt(existing.defaultWebhookSecret).trim() : "";
             const webhookSecret = secretInput || existingSecret;
-            if (!webhookSecret) {
-                throw new Error("Default webhook secret is required when auto create is enabled");
+            const existingSigningToken = existing.defaultWebhookSigningToken
+                ? decrypt(existing.defaultWebhookSigningToken).trim()
+                : "";
+            const signingToken = existing.provider === "gitlab" ? signingTokenInput || existingSigningToken : "";
+            if (!webhookSecret && !signingToken) {
+                throw new WebhookCredentialError(
+                    existing.provider === "gitlab"
+                        ? "Default webhook secret or signing token is required when auto create is enabled"
+                        : "Default webhook secret is required when auto create is enabled",
+                );
             }
             const defaultConfigPolicyPatch: Record<string, unknown> = {};
             for (const key of Object.keys(getTableColumns(gitProviderAccessTable))) {
-                if (!key.startsWith("default") || key === "defaultWebhookSecret") {
+                if (
+                    !key.startsWith("default") ||
+                    key === "defaultWebhookSecret" ||
+                    key === "defaultWebhookSigningToken"
+                ) {
                     continue;
                 }
                 const value = input[key as keyof typeof input];
@@ -183,7 +205,10 @@ export class GitLabAccessService {
             }
             Object.assign(patch, {
                 autoCreateEnabled: true,
-                defaultWebhookSecret: encrypt(webhookSecret),
+                defaultWebhookSecret: secretInput ? encrypt(secretInput) : existing.defaultWebhookSecret,
+                defaultWebhookSigningToken: signingTokenInput
+                    ? encrypt(signingTokenInput)
+                    : existing.defaultWebhookSigningToken,
                 ...defaultConfigPolicyPatch,
             });
         }

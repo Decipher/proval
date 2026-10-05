@@ -79,7 +79,7 @@ export const verifyForgejoWebhook = createMiddleware(async (c, next) => {
     if (existing) {
         const { repository } = existing;
 
-        const secret = decrypt(repository.webhookSecret).trim();
+        const secret = repository.webhookSecret ? decrypt(repository.webhookSecret).trim() : "";
         if (!secret) {
             log("Webhook secret not configured", "Forgejo");
             return c.json({ error: "Webhook secret not configured" }, 401);
@@ -104,7 +104,7 @@ export const verifyForgejoWebhook = createMiddleware(async (c, next) => {
         return c.json({ error: "Repository not found" }, 404);
     }
 
-    const defaultWebhookSecret = decrypt(access.defaultWebhookSecret!).trim();
+    const defaultWebhookSecret = access.defaultWebhookSecret ? decrypt(access.defaultWebhookSecret).trim() : "";
     if (!verifyForgejoSignature(defaultWebhookSecret, rawBody, signature)) {
         log("Invalid webhook signature", "Forgejo");
         return c.json({ error: "Invalid webhook signature" }, 401);
