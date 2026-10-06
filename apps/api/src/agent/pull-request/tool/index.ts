@@ -12,6 +12,7 @@ export { getPullRequestInlineReviewCommentTool } from "./get-pull-request-inline
 export { getPullRequestInlineReviewListTool } from "./get-pull-request-inline-review-list.js";
 export { createSingleLineCommentTool } from "./create-single-line-comment.js";
 export { createMultiLineCommentTool } from "./create-multi-line-comment.js";
+export { evaluatePullRequestTool } from "./evaluate-pull-request.js";
 export { approvePullRequestTool } from "./approve-pull-request.js";
 export { unapprovePullRequestTool } from "./unapprove-pull-request.js";
 export { appendReviewUnitTool } from "./append-review-unit.js";

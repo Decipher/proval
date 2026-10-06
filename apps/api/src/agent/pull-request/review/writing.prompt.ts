@@ -130,6 +130,16 @@ export const WRITING_WORKFLOW = [
     "",
 ].join("\n");
 
+export const WRITING_EVALUATION_RULE = [
+    "## Pull request evaluation (first review only)",
+    "",
+    "After post_pull_request_comment, call evaluate_pull_request exactly once.",
+    "Set isGood true only when this review has no Main Issues.",
+    "Set isGood false if you posted any create_single_line_comment or create_multi_line_comment.",
+    "Set isGood false if the summary lists any Main Issue (lines prefixed with 🚨 or ⚫️), including when inline review mode is off.",
+    "Additional Notes and Good points alone are fine for isGood true.",
+].join("\n");
+
 export const PR_REVIEW_WRITING_USER_PROMPT_HEADER = [
     USER_PROMPT_BASE,
     "Do not publish findings the owner asked you to omit, even if a sub-agent handoff included them.",
