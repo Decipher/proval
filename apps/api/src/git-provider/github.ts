@@ -699,7 +699,7 @@ export class GitHubProvider implements GitProvider {
             }
         } catch (error) {
             const status = (error as { status?: number }).status;
-            if (status === 422) return;
+            if (status === 404 || status === 422) return;
             throw error;
         }
     }
@@ -714,40 +714,46 @@ export class GitHubProvider implements GitProvider {
         type ExistingEmoji = { id: number; user?: { login?: string } | null; content?: string };
         let existingEmojiList: ExistingEmoji[] = [];
 
-        switch (target.type) {
-            case "pull_request": {
-                const { data } = await this.octokit.reactions.listForIssue({
-                    ...base,
-                    issue_number: target.prIid,
-                });
-                existingEmojiList = data;
-                break;
+        try {
+            switch (target.type) {
+                case "pull_request": {
+                    const { data } = await this.octokit.reactions.listForIssue({
+                        ...base,
+                        issue_number: target.prIid,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+                case "issue": {
+                    const { data } = await this.octokit.reactions.listForIssue({
+                        ...base,
+                        issue_number: target.issueIid,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+                case "pull_request_comment":
+                case "issue_comment": {
+                    const { data } = await this.octokit.reactions.listForIssueComment({
+                        ...base,
+                        comment_id: target.commentId,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+                case "inline_review_comment": {
+                    const { data } = await this.octokit.reactions.listForPullRequestReviewComment({
+                        ...base,
+                        comment_id: target.commentId,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
             }
-            case "issue": {
-                const { data } = await this.octokit.reactions.listForIssue({
-                    ...base,
-                    issue_number: target.issueIid,
-                });
-                existingEmojiList = data;
-                break;
-            }
-            case "pull_request_comment":
-            case "issue_comment": {
-                const { data } = await this.octokit.reactions.listForIssueComment({
-                    ...base,
-                    comment_id: target.commentId,
-                });
-                existingEmojiList = data;
-                break;
-            }
-            case "inline_review_comment": {
-                const { data } = await this.octokit.reactions.listForPullRequestReviewComment({
-                    ...base,
-                    comment_id: target.commentId,
-                });
-                existingEmojiList = data;
-                break;
-            }
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404) return;
+            throw error;
         }
 
         const matched = existingEmojiList.find((row) => row.user?.login === bot && row.content === content);
