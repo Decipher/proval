@@ -1,24 +1,27 @@
 import { Octokit } from "@octokit/rest";
-import type {
-    GitComment,
-    GitCodeSearchResult,
-    GitDiffMultiLine,
-    GitDiffSingleLine,
-    GitIssue,
-    GitIssueState,
-    GitRepositoryLabel,
-    GitPullRequest,
-    GitPullRequestInlineReview,
-    GitPullRequestState,
-    GitPullRequestVersion,
-    GitProvider,
-    GitRelatedItem,
-    GitRepository,
-    GitTree,
-    GitUser,
-    GitUserPermissionIdentity,
-    GitRepositoryListItem,
-    ListPaginationOptions,
+import {
+    emojiList,
+    type GitComment,
+    type GitCodeSearchResult,
+    type GitDiffMultiLine,
+    type GitDiffSingleLine,
+    type GitIssue,
+    type GitIssueState,
+    type GitRepositoryLabel,
+    type GitPullRequest,
+    type GitPullRequestInlineReview,
+    type GitPullRequestState,
+    type GitPullRequestVersion,
+    type GitProvider,
+    type GitRelatedItem,
+    type GitRepository,
+    type GitTree,
+    type GitUser,
+    type GitUserPermissionIdentity,
+    type GitRepositoryListItem,
+    type GitEmoji,
+    type GitEmojiTarget,
+    type ListPaginationOptions,
 } from "./types.js";
 import {
     buildInlineReviewList,
@@ -665,6 +668,134 @@ export class GitHubProvider implements GitProvider {
             pull_number: prNumber,
             reviewers: [user.username],
         });
+    }
+
+    public async addEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void> {
+        const content = emojiList[emoji]?.github;
+        if (!content) return;
+
+        const base = { owner: this.owner, repo: this.repo, content };
+
+        try {
+            switch (target.type) {
+                case "pull_request":
+                    await this.octokit.reactions.createForIssue({ ...base, issue_number: target.prIid });
+                    break;
+                case "issue":
+                    await this.octokit.reactions.createForIssue({ ...base, issue_number: target.issueIid });
+                    break;
+                case "pull_request_comment":
+                    await this.octokit.reactions.createForIssueComment({ ...base, comment_id: target.commentId });
+                    break;
+                case "issue_comment":
+                    await this.octokit.reactions.createForIssueComment({ ...base, comment_id: target.commentId });
+                    break;
+                case "inline_review_comment":
+                    await this.octokit.reactions.createForPullRequestReviewComment({
+                        ...base,
+                        comment_id: target.commentId,
+                    });
+                    break;
+            }
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404 || status === 422) return;
+            throw error;
+        }
+    }
+
+    public async removeEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void> {
+        const content = emojiList[emoji]?.github;
+        if (!content) return;
+
+        const base = { owner: this.owner, repo: this.repo };
+        const bot = this.botUsername;
+
+        type ExistingEmoji = { id: number; user?: { login?: string } | null; content?: string };
+        let existingEmojiList: ExistingEmoji[] = [];
+
+        try {
+            switch (target.type) {
+                case "pull_request": {
+                    const { data } = await this.octokit.reactions.listForIssue({
+                        ...base,
+                        issue_number: target.prIid,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+                case "issue": {
+                    const { data } = await this.octokit.reactions.listForIssue({
+                        ...base,
+                        issue_number: target.issueIid,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+                case "pull_request_comment":
+                case "issue_comment": {
+                    const { data } = await this.octokit.reactions.listForIssueComment({
+                        ...base,
+                        comment_id: target.commentId,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+                case "inline_review_comment": {
+                    const { data } = await this.octokit.reactions.listForPullRequestReviewComment({
+                        ...base,
+                        comment_id: target.commentId,
+                    });
+                    existingEmojiList = data;
+                    break;
+                }
+            }
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404) return;
+            throw error;
+        }
+
+        const matched = existingEmojiList.find((row) => row.user?.login === bot && row.content === content);
+        if (!matched) return;
+
+        try {
+            switch (target.type) {
+                case "pull_request":
+                    await this.octokit.reactions.deleteForIssue({
+                        ...base,
+                        issue_number: target.prIid,
+                        reaction_id: matched.id,
+                    });
+                    break;
+                case "issue":
+                    await this.octokit.reactions.deleteForIssue({
+                        ...base,
+                        issue_number: target.issueIid,
+                        reaction_id: matched.id,
+                    });
+                    break;
+                case "pull_request_comment":
+                case "issue_comment":
+                    await this.octokit.reactions.deleteForIssueComment({
+                        ...base,
+                        comment_id: target.commentId,
+                        reaction_id: matched.id,
+                    });
+                    break;
+                case "inline_review_comment":
+                    await this.octokit.reactions.deleteForPullRequestComment({
+                        ...base,
+                        comment_id: target.commentId,
+                        reaction_id: matched.id,
+                    });
+                    break;
+            }
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404) return;
+            throw error;
+        }
     }
 
     public async fetchRepositoryList(): Promise<GitRepositoryListItem[]> {

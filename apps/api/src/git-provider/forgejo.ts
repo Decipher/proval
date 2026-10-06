@@ -1,21 +1,24 @@
-import type {
-    GitComment,
-    GitCodeSearchResult,
-    GitDiffMultiLine,
-    GitDiffSingleLine,
-    GitIssue,
-    GitRepositoryLabel,
-    GitPullRequest,
-    GitPullRequestInlineReview,
-    GitPullRequestVersion,
-    GitProvider,
-    GitRelatedItem,
-    GitRepository,
-    GitTree,
-    GitUser,
-    GitUserPermissionIdentity,
-    GitRepositoryListItem,
-    ListPaginationOptions,
+import {
+    emojiList,
+    type GitComment,
+    type GitCodeSearchResult,
+    type GitDiffMultiLine,
+    type GitDiffSingleLine,
+    type GitIssue,
+    type GitRepositoryLabel,
+    type GitPullRequest,
+    type GitPullRequestInlineReview,
+    type GitPullRequestVersion,
+    type GitProvider,
+    type GitRelatedItem,
+    type GitRepository,
+    type GitTree,
+    type GitUser,
+    type GitUserPermissionIdentity,
+    type GitRepositoryListItem,
+    type GitEmoji,
+    type GitEmojiTarget,
+    type ListPaginationOptions,
 } from "./types.js";
 import { log } from "../util/log.js";
 import {
@@ -615,6 +618,65 @@ export class ForgejoProvider implements GitProvider {
             author: "",
             createdAt: new Date().toISOString(),
         };
+    }
+
+    public async addEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void> {
+        const content = emojiList[emoji]?.forgejo;
+        if (!content) return;
+
+        let path: string;
+        switch (target.type) {
+            case "pull_request":
+                path = `/repos/${this.owner}/${this.repo}/issues/${target.prIid}/reactions`;
+                break;
+            case "issue":
+                path = `/repos/${this.owner}/${this.repo}/issues/${target.issueIid}/reactions`;
+                break;
+            case "pull_request_comment":
+            case "issue_comment":
+            case "inline_review_comment":
+                path = `/repos/${this.owner}/${this.repo}/issues/comments/${target.commentId}/reactions`;
+                break;
+        }
+
+        try {
+            await this.requestJson(path, {
+                method: "POST",
+                body: JSON.stringify({ content }),
+            });
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404 || status === 422) return;
+            throw error;
+        }
+    }
+
+    public async removeEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void> {
+        const content = emojiList[emoji]?.forgejo;
+        if (!content) return;
+
+        let path: string;
+        switch (target.type) {
+            case "pull_request":
+                path = `/repos/${this.owner}/${this.repo}/issues/${target.prIid}/reactions?content=${encodeURIComponent(content)}`;
+                break;
+            case "issue":
+                path = `/repos/${this.owner}/${this.repo}/issues/${target.issueIid}/reactions?content=${encodeURIComponent(content)}`;
+                break;
+            case "pull_request_comment":
+            case "issue_comment":
+            case "inline_review_comment":
+                path = `/repos/${this.owner}/${this.repo}/issues/comments/${target.commentId}/reactions?content=${encodeURIComponent(content)}`;
+                break;
+        }
+
+        try {
+            await this.requestJson(path, { method: "DELETE" });
+        } catch (error) {
+            const status = (error as { status?: number }).status;
+            if (status === 404) return;
+            throw error;
+        }
     }
 
     public async approvePullRequest(prIid: number): Promise<void> {

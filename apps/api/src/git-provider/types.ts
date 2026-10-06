@@ -157,6 +157,25 @@ export interface GitRepositoryListItem {
     defaultBranch: string;
 }
 
+export const emojiList = {
+    "👀": { github: "eyes", gitlab: "eyes", forgejo: "eyes" },
+    "👍": { github: "+1", gitlab: "thumbsup", forgejo: "+1" },
+    "👎": { github: "-1", gitlab: "thumbsdown", forgejo: "-1" },
+    "😄": { github: "laugh", gitlab: "smile", forgejo: "laugh" },
+    "❤️": { github: "heart", gitlab: "heart", forgejo: "heart" },
+    "🎉": { github: "hooray", gitlab: "tada", forgejo: "hooray" },
+    "🚀": { github: "rocket", gitlab: "rocket", forgejo: "rocket" },
+} as const;
+
+export type GitEmoji = keyof typeof emojiList;
+
+export type GitEmojiTarget =
+    | { type: "pull_request"; prIid: number }
+    | { type: "issue"; issueIid: number }
+    | { type: "pull_request_comment"; prIid: number; commentId: number }
+    | { type: "issue_comment"; issueIid: number; commentId: number }
+    | { type: "inline_review_comment"; prIid: number; commentId: number };
+
 export interface GitProvider {
     fetchCurrentUser(): Promise<GitUser>;
     fetchRepositoryDetail(): Promise<GitRepository>;
@@ -211,4 +230,6 @@ export interface GitProvider {
     fetchGitRepositoryAuthHeader(): Promise<string>;
     getPullRequestHeadFetchRef(prIid: number): string;
     getBranchFetchRef(branch: string): string;
+    addEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void>;
+    removeEmoji(target: GitEmojiTarget, emoji: GitEmoji): Promise<void>;
 }

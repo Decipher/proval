@@ -43,7 +43,14 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
         previousHeadSha = null,
     } = params;
     const label = `[PR #${prIid}] Review`;
+    const emojiTarget = { type: "pull_request" as const, prIid };
     try {
+        try {
+            await provider.addEmoji(emojiTarget, "👀");
+        } catch (error) {
+            logAgentError(activityId, "add emoji failed", error, label);
+        }
+
         logAgent(activityId, "fetching pull request version", label);
         const detail = await provider.fetchPullRequestDetail(prIid);
         const version = await provider.fetchPullRequestVersion(prIid);
@@ -201,6 +208,11 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             })),
         };
     } finally {
+        try {
+            await provider.removeEmoji(emojiTarget, "👀");
+        } catch (error) {
+            logAgentError(activityId, "remove emoji failed", error, label);
+        }
         await workspace.clean();
     }
 };
