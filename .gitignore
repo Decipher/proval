@@ -6,6 +6,7 @@ node_modules
 .turbo
 .svelte-kit
 .bruno
+.idea
 
 .env
 .env.development

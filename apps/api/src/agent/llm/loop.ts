@@ -280,30 +280,58 @@ export async function runAgentLoop(
 
             const results = await Promise.all(
                 response.message.toolCalls.map(async (tc) => {
+                    const toolLog = { label, toolName: tc.name, toolCallId: crypto.randomUUID() };
+                    logAgentTool(activityId, { ...toolLog, type: "tool-call", message: tc.arguments });
                     const tool = toolList.find((t) => t.name === tc.name);
                     if (!tool) {
-                        logAgentTool(activityId, label, `  → ${tc.name}`, "unknown tool, skipping");
+                        logAgentTool(activityId, {
+                            ...toolLog,
+                            type: "tool-error",
+                            message: `Unknown tool ${tc.name}`,
+                        });
                         return {
                             toolCallId: tc.id,
                             content: JSON.stringify({ error: `Unknown tool: ${tc.name}` }),
                         };
                     }
 
-                    const args = JSON.parse(tc.arguments);
-                    logAgentTool(activityId, label, `  → ${tool.name}`, JSON.stringify(args));
+                    let args: Record<string, unknown>;
+                    try {
+                        args = JSON.parse(tc.arguments);
+                    } catch (error) {
+                        logAgentTool(
+                            activityId,
+                            {
+                                ...toolLog,
+                                type: "tool-error",
+                                message: error instanceof Error ? error.message : String(error),
+                            },
+                            error,
+                        );
+                        throw error;
+                    }
 
                     try {
                         const result = await tool.execute(args);
                         toolCallCount[tool.name] = (toolCallCount[tool.name] ?? 0) + 1;
-                        let content = typeof result === "string" ? result : JSON.stringify(result);
+                        let content = typeof result === "string" ? result : (JSON.stringify(result) ?? "null");
+                        const isToolError =
+                            result !== null &&
+                            typeof result === "object" &&
+                            "error" in result &&
+                            typeof result.error === "string";
+                        logAgentTool(activityId, {
+                            ...toolLog,
+                            type: isToolError ? "tool-error" : "tool-result",
+                            message: content,
+                        });
                         if (tool.untrustedResult) {
                             content = wrapUntrustedToolContent(content);
                         }
-                        logAgentTool(activityId, label, "result:", content);
                         return { toolCallId: tc.id, content };
                     } catch (err) {
                         const errorMsg = err instanceof Error ? err.message : String(err);
-                        logAgentError(activityId, `    error: ${errorMsg}`, err, label);
+                        logAgentTool(activityId, { ...toolLog, type: "tool-error", message: errorMsg }, err);
                         return { toolCallId: tc.id, content: JSON.stringify({ error: errorMsg }) };
                     }
                 }),

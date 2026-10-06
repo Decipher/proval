@@ -1,7 +1,13 @@
 /* eslint-disable no-console */
 
 import pc from "picocolors";
-import type { ActivityLogEntry, ActivityLogLevel } from "@proval/types";
+import type {
+    ActivityLogEntry,
+    CommonLogEntry,
+    ToolCallLogEntry,
+    ToolResultLogEntry,
+    ToolErrorLogEntry,
+} from "@proval/types";
 import type { AgentRunResult } from "../agent/llm/loop.js";
 import { ActivityService } from "../api/activity/activity.service.js";
 
@@ -24,12 +30,17 @@ function shortenLogMessage(message: string, max: number): string {
     return message.length > max ? `${message.slice(0, max)}…` : message;
 }
 
-function persistAgentLog(activityId: number, level: ActivityLogLevel, label: string, message: string): void {
+type AgentLogInput =
+    | Omit<CommonLogEntry, "timestamp">
+    | Omit<ToolCallLogEntry, "timestamp">
+    | Omit<ToolResultLogEntry, "timestamp">
+    | Omit<ToolErrorLogEntry, "timestamp">;
+
+function persistAgentLog(activityId: number, input: AgentLogInput): void {
     const entry: ActivityLogEntry = {
+        ...input,
         timestamp: new Date().toISOString(),
-        level,
-        label,
-        message: shortenLogMessage(message, DASHBOARD_LOG_MAX),
+        message: shortenLogMessage(input.message, DASHBOARD_LOG_MAX),
     };
     void activityService.appendLog(activityId, entry);
 }
@@ -66,7 +77,7 @@ export const debug = (message: string, label?: string) => {
 
 export function logAgent(activityId: number, message: string, label: string): void {
     log(shortenLogMessage(message, TERMINAL_LOG_MAX), label);
-    persistAgentLog(activityId, "info", label, message);
+    persistAgentLog(activityId, { type: "common", level: "info", label, message });
 }
 
 function logToolLine(label: string, heading: string, body: string): void {
@@ -81,10 +92,20 @@ function logToolLine(label: string, heading: string, body: string): void {
     }
 }
 
-export function logAgentTool(activityId: number, label: string, heading: string, body = ""): void {
-    logToolLine(label, heading, body);
-    const stored = body.length > 0 ? `${heading} ${body}` : heading;
-    persistAgentLog(activityId, "info", label, stored);
+export function logAgentTool(
+    activityId: number,
+    entry: Omit<ToolCallLogEntry | ToolResultLogEntry | ToolErrorLogEntry, "timestamp" | "level">,
+    error?: unknown,
+): void {
+    if (entry.type === "tool-error") {
+        logError(shortenLogMessage(`${entry.toolName} ${entry.message}`, TERMINAL_ERROR_LOG_MAX), error, entry.label);
+        persistAgentLog(activityId, { ...entry, type: entry.type, level: "error" });
+        return;
+    }
+
+    const heading = entry.type === "tool-call" ? `  → ${entry.toolName}` : `result ${entry.toolName}`;
+    logToolLine(entry.label, heading, entry.message);
+    persistAgentLog(activityId, { ...entry, type: entry.type, level: "info" });
 }
 
 export function logAgentError(activityId: number, message: string, error?: unknown, label?: string): void {
@@ -96,7 +117,7 @@ export function logAgentError(activityId: number, message: string, error?: unkno
         }
     }
     logError(shortenLogMessage(message, TERMINAL_ERROR_LOG_MAX), error, label);
-    persistAgentLog(activityId, "error", label ?? "log", storedMessage);
+    persistAgentLog(activityId, { type: "common", level: "error", label: label ?? "log", message: storedMessage });
 }
 
 function formatAgentResultMessage(
@@ -120,5 +141,5 @@ export const logAgentResult = (
 ): void => {
     const message = formatAgentResultMessage(result, elapsedMs, reason);
     log(message, label);
-    persistAgentLog(activityId, reason === "completed" ? "info" : "warn", label, message);
+    persistAgentLog(activityId, { type: "common", level: reason === "completed" ? "info" : "warn", label, message });
 };

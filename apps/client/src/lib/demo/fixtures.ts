@@ -320,6 +320,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "started",
         targetIid: 142,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: null,
         cachedInputToken: null,
         outputToken: null,
@@ -339,6 +340,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "started",
         targetIid: 87,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: null,
         cachedInputToken: null,
         outputToken: null,
@@ -358,6 +360,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 141,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: 1048200,
         cachedInputToken: 838600,
         outputToken: 312400,
@@ -377,6 +380,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 86,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: 876400,
         cachedInputToken: 701100,
         outputToken: 268500,
@@ -396,6 +400,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "failed",
         targetIid: 34,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: 912000,
         cachedInputToken: 0,
         outputToken: 0,
@@ -415,6 +420,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 140,
         headSha: null,
+        logVersion: "1",
         inputToken: 286400,
         cachedInputToken: 229100,
         outputToken: 48200,
@@ -434,6 +440,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 52,
         headSha: null,
+        logVersion: "1",
         inputToken: 164800,
         cachedInputToken: 133500,
         outputToken: 51400,
@@ -453,6 +460,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "failed",
         targetIid: 139,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: 1156000,
         cachedInputToken: 0,
         outputToken: 0,
@@ -472,6 +480,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 85,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: 1186700,
         cachedInputToken: 961200,
         outputToken: 294800,
@@ -491,6 +500,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 12,
         headSha: null,
+        logVersion: "1",
         inputToken: 218500,
         cachedInputToken: 174800,
         outputToken: 47600,
@@ -510,6 +520,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 138,
         headSha: "a1b2c3d4e5f6789012345678abcdef0123456789",
+        logVersion: "1",
         inputToken: 1324500,
         cachedInputToken: 1046400,
         outputToken: 341200,
@@ -529,6 +540,7 @@ const recentActivityList: ActivityResponse[] = [
         status: "completed",
         targetIid: 84,
         headSha: null,
+        logVersion: "1",
         inputToken: 412600,
         cachedInputToken: 330100,
         outputToken: 54800,
@@ -601,6 +613,7 @@ function buildHistoricalActivities(): ActivityResponse[] {
                 status: failed ? "failed" : "completed",
                 targetIid: nextIid,
                 headSha: type === "pr_review" ? `deadbeef${String(nextId).padStart(32, "0")}`.slice(0, 40) : null,
+                logVersion: "1",
                 ...tokens,
                 errorMessage: failed
                     ? rng() < 0.5
@@ -917,39 +930,56 @@ export function getActivityLogsById(id: number): ActivityLogResponse | undefined
     const base = activity.createdAt.getTime();
     const sample: ActivityLogEntry[] = [
         {
+            type: "common",
             timestamp: new Date(base).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Review`,
             message: "fetching pull request version",
         },
         {
+            type: "common",
             timestamp: new Date(base + 400).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Review`,
             message: "version ready head=abc123def456…",
         },
         {
+            type: "common",
             timestamp: new Date(base + 1800).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Review`,
             message: "ready (head=abc123def456…)",
         },
         {
+            type: "common",
             timestamp: new Date(base + 3200).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Plan`,
             message: "loop started",
         },
         {
+            type: "tool-call",
             timestamp: new Date(base + 5100).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Plan`,
-            message: '→ get_file_diff({"path":"src/app.ts"})',
+            toolName: "get_file_diff",
+            toolCallId: `demo-${id}-diff`,
+            message: '{"path":"src/app.ts"}',
+        },
+        {
+            type: "tool-result",
+            timestamp: new Date(base + 5500).toISOString(),
+            level: "info",
+            label: `[PR #${activity.targetIid}] Plan`,
+            toolName: "get_file_diff",
+            toolCallId: `demo-${id}-diff`,
+            message: '{"path":"src/app.ts","diff":"export const enabled = true"}',
         },
     ];
 
     if (activity.status === "failed") {
         sample.push({
+            type: "common",
             timestamp: new Date(base + 8000).toISOString(),
             level: "error",
             label: `[PR #${activity.targetIid}] Writing`,
@@ -957,6 +987,7 @@ export function getActivityLogsById(id: number): ActivityLogResponse | undefined
         });
     } else if (activity.status === "completed") {
         sample.push({
+            type: "common",
             timestamp: new Date(base + 12000).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Writing`,
@@ -964,6 +995,7 @@ export function getActivityLogsById(id: number): ActivityLogResponse | undefined
         });
     } else {
         sample.push({
+            type: "common",
             timestamp: new Date(base + 7000).toISOString(),
             level: "info",
             label: `[PR #${activity.targetIid}] Writing`,
@@ -971,7 +1003,7 @@ export function getActivityLogsById(id: number): ActivityLogResponse | undefined
         });
     }
 
-    return { status: activity.status, logs: sample };
+    return { status: activity.status, logVersion: "1", logs: sample };
 }
 
 export function getGitHubInstallationById(id: number): GitHubInstallationResponse | undefined {

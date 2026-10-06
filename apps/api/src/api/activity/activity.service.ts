@@ -1,8 +1,9 @@
-import { activityTable, repositoryTable } from "@proval/db";
+import { activityTable, repositoryTable, type ActivityLogEntryJson } from "@proval/db";
 import type {
     Activity,
     ActivityLogEntry,
     ActivityLogResponse,
+    CommonLogEntry,
     ActivityResponse,
     ActivityStats,
     ActivityTokenUsage,
@@ -212,6 +213,30 @@ function buildActivityListWhere(filter: ActivityListFilter): SQL | undefined {
     return and(...conditionList);
 }
 
+function isActivityLogEntry(entry: ActivityLogEntryJson): entry is ActivityLogEntry {
+    if (typeof entry.label !== "string") return false;
+    if (entry.type === "common") return true;
+    return (
+        (entry.type === "tool-call" ||
+            entry.type === "tool-result" ||
+            (entry.type === "tool-error" && entry.level === "error")) &&
+        typeof entry.toolName === "string" &&
+        entry.toolName.length > 0 &&
+        typeof entry.toolCallId === "string" &&
+        entry.toolCallId.length > 0
+    );
+}
+
+function convertLegacyActivityLog(entry: ActivityLogEntryJson): CommonLogEntry {
+    return {
+        type: "common",
+        timestamp: entry.timestamp,
+        level: entry.level,
+        label: entry.label ?? entry.step ?? "log",
+        message: entry.message,
+    };
+}
+
 const listOrderBy = [
     sql`CASE WHEN ${activityTable.status} = 'started' THEN 0 ELSE 1 END`,
     desc(activityTable.createdAt),
@@ -414,7 +439,7 @@ export class ActivityService {
 
     public async findLogListById(id: number): Promise<ActivityLogResponse | null> {
         const rows = await db
-            .select({ status: activityTable.status, logs: activityTable.logs })
+            .select({ status: activityTable.status, logVersion: activityTable.logVersion, logs: activityTable.logs })
             .from(activityTable)
             .where(eq(activityTable.id, id))
             .limit(1);
@@ -423,23 +448,41 @@ export class ActivityService {
             return null;
         }
 
-        const rawLogList = (rows[0].logs ?? []) as Array<{
-            timestamp: string;
-            level: ActivityLogEntry["level"];
-            label?: string;
-            step?: string;
-            message: string;
-        }>;
+        const logList = rows[0].logs ?? [];
+        if (rows[0].logVersion === "1") {
+            return { status: rows[0].status, logVersion: "1", logs: logList as ActivityLogEntry[] };
+        }
 
-        return {
-            status: rows[0].status,
-            logs: rawLogList.map((entry) => ({
-                timestamp: entry.timestamp,
-                level: entry.level,
-                label: entry.label ?? entry.step ?? "log",
-                message: entry.message,
-            })),
-        };
+        // Convert legacy log schema to newer version and save to db
+        return db.transaction(
+            (tx) => {
+                // Read again after taking the write lock to preserve concurrent appends
+                const activity = tx
+                    .select({
+                        status: activityTable.status,
+                        logVersion: activityTable.logVersion,
+                        logs: activityTable.logs,
+                    })
+                    .from(activityTable)
+                    .where(eq(activityTable.id, id))
+                    .get();
+                if (!activity) return null;
+
+                const currentLogList = activity.logs ?? [];
+                if (activity.logVersion === "1") {
+                    return { status: activity.status, logVersion: "1", logs: currentLogList as ActivityLogEntry[] };
+                }
+                const convertedLogList = currentLogList.map((entry) =>
+                    isActivityLogEntry(entry) ? entry : convertLegacyActivityLog(entry),
+                );
+                tx.update(activityTable)
+                    .set({ logs: convertedLogList, logVersion: "1", updatedAt: sql`${activityTable.updatedAt}` })
+                    .where(eq(activityTable.id, id))
+                    .run();
+                return { status: activity.status, logVersion: "1", logs: convertedLogList };
+            },
+            { behavior: "immediate" },
+        );
     }
 
     public async appendLog(id: number, entry: ActivityLogEntry): Promise<void> {
@@ -472,6 +515,7 @@ export class ActivityService {
                 repositoryPath: repository.path,
                 provider: repository.provider,
                 status: "started",
+                logVersion: "1",
             })
             .returning({ id: activityTable.id });
 

@@ -173,10 +173,14 @@ export const repositoryTable = sqliteTable(
 );
 
 export type ActivityLogEntryJson = {
+    type?: "common" | "tool-call" | "tool-result" | "tool-error";
     timestamp: string;
     level: "info" | "warn" | "error" | "debug";
-    label: string;
+    label?: string;
+    step?: string;
     message: string;
+    toolName?: string;
+    toolCallId?: string;
 };
 
 export const activityTable = sqliteTable(
@@ -196,6 +200,7 @@ export const activityTable = sqliteTable(
         cachedInputToken: integer(),
         outputToken: integer(),
         errorMessage: text(),
+        logVersion: text({ enum: ["1"] }),
         logs: text({ mode: "json" }).$type<ActivityLogEntryJson[]>().notNull().default([]),
         completedAt: integer({ mode: "timestamp" }),
         ...timeStamp,
