@@ -205,7 +205,7 @@
                     {#if review.repositoryId}
                         <a
                             href="/repository/{review.repositoryId}"
-                            class="truncate text-base font-medium text-foreground underline-offset-2 transition-colors hover:text-primary hover:underline">
+                            class="truncate text-base font-medium text-foreground underline-offset-2 transition-colors hover:text-primary-text hover:underline">
                             {review.repositoryPath}
                         </a>
                     {:else}

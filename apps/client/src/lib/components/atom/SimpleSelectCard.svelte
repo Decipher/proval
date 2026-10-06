@@ -31,7 +31,7 @@
     </div>
 
     <div class="flex min-w-0 flex-col">
-        <span class={twMerge("text-sm font-medium", selected ? "text-primary" : "text-foreground")}>
+        <span class={twMerge("text-sm font-medium", selected ? "text-primary-text" : "text-foreground")}>
             {label}
         </span>
         {#if description}

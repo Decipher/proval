@@ -69,7 +69,7 @@
         {#if data.auth.isRegistrationEnabled}
             <p class="mt-4 text-center text-sm text-muted-foreground">
                 No account?
-                <a href="/register" class="font-medium text-primary hover:underline">Register</a>
+                <a href="/register" class="font-medium text-primary-text hover:underline">Register</a>
             </p>
         {/if}
     </Card>

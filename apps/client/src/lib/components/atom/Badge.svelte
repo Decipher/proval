@@ -19,7 +19,7 @@
         success: "bg-success-muted text-success",
         warning: "bg-warning-muted text-warning",
         danger: "bg-destructive-muted text-destructive",
-        primary: "bg-primary/10 text-primary",
+        primary: "bg-primary/10 text-primary-text",
     };
 </script>
 

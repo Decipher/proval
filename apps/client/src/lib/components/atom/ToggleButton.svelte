@@ -20,7 +20,7 @@
     class={twMerge(
         `flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border px-4 py-3 text-center transition-colors ${
             selected
-                ? "border-primary bg-primary/5 text-primary"
+                ? "border-primary bg-primary/5 text-primary-text"
                 : "border-border text-secondary-foreground hover:border-border-strong"
         }`,
         className,

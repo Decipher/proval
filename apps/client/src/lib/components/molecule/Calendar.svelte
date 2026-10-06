@@ -106,7 +106,7 @@
             inRange && !isEndpoint && "bg-primary/10",
             inRange && !isEndpoint && !weekendText && "text-foreground",
             isEndpoint && "rounded-lg bg-primary font-medium text-primary-foreground",
-            isToday && !isEndpoint && !weekendText && "font-semibold text-primary",
+            isToday && !isEndpoint && !weekendText && "font-semibold text-primary-text",
             !isEndpoint && !inRange && "rounded-lg hover:bg-accent",
         );
     }

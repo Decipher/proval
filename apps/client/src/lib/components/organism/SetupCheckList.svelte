@@ -54,13 +54,13 @@
                     class="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
                         {#if step.status === "complete"}
-                            <CheckCircleIcon weight="fill" class="mt-0.5 size-5 shrink-0 text-primary" />
+                            <CheckCircleIcon weight="fill" class="mt-0.5 size-5 shrink-0 text-primary-text" />
                         {:else if step.status === "blocked"}
                             <LockIcon class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                         {:else}
                             <CircleIcon
                                 class="mt-0.5 size-5 shrink-0 {step.status === 'current'
-                                    ? 'text-primary'
+                                    ? 'text-primary-text'
                                     : 'text-border-strong'}" />
                         {/if}
 
