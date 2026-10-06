@@ -1,9 +1,14 @@
 import type { ActivityLogEntry, ToolResultLogEntry } from "@proval/types";
+import hljs from "highlight.js/lib/core";
+import json from "highlight.js/lib/languages/json";
+
+hljs.registerLanguage("json", json);
 
 export interface ActivityLogRow {
     key: number;
     entry: Exclude<ActivityLogEntry, ToolResultLogEntry>;
     result?: ToolResultLogEntry;
+    argumentHtml: string;
 }
 
 export function serializeActivityLogList(logList: readonly ActivityLogEntry[]): ActivityLogRow[] {
@@ -23,6 +28,10 @@ export function serializeActivityLogList(logList: readonly ActivityLogEntry[]): 
             key: index,
             entry,
             result: entry.type === "tool-call" && result?.toolName === entry.toolName ? result : undefined,
+            argumentHtml:
+                entry.type === "tool-call"
+                    ? hljs.highlight(entry.message, { language: "json", ignoreIllegals: true }).value
+                    : "",
         });
     }
     return rowList;

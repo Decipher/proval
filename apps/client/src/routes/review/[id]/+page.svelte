@@ -346,10 +346,16 @@
                                                     aria-hidden="true" />
                                                 <span
                                                     class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
-                                                    <span class="block font-semibold">{transformToolName(entry.toolName)}</span>
-                                                    <span class="whitespace-pre-wrap">{entry.message}</span><span
-                                                        class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                                                        >{formatLogTime(entry.timestamp)}</span>
+                                                    <span class="block">
+                                                        {transformToolName(entry.toolName)}<span
+                                                            class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                                                            >{formatLogTime(entry.timestamp)}</span>
+                                                    </span>
+                                                    <!-- eslint-disable svelte/no-at-html-tags -- Highlight.js escapes the argument text before adding markup -->
+                                                    <code
+                                                        class="whitespace-pre-wrap [&_.hljs-attr]:text-primary-text [&_.hljs-literal]:text-violet-700 dark:[&_.hljs-literal]:text-violet-300 [&_.hljs-number]:text-warning [&_.hljs-punctuation]:text-secondary-foreground [&_.hljs-string]:text-success"
+                                                        >{@html row.argumentHtml}</code>
+                                                    <!-- eslint-enable svelte/no-at-html-tags -->
                                                 </span>
                                                 <CaretRightIcon
                                                     size={14}
@@ -363,8 +369,10 @@
                                                             row.result.level,
                                                         )}">
                                                         <!-- <span class="block font-semibold">Result</span> -->
-                                                        <div class="px-2 py-1.5 border border-border rounded-sm bg-card text-secondary-foreground">
-                                                            <span class="whitespace-pre-wrap">{row.result.message}</span>
+                                                        <div
+                                                            class="rounded-sm border border-border bg-card px-2 py-1.5 text-secondary-foreground">
+                                                            <span class="whitespace-pre-wrap"
+                                                                >{row.result.message}</span>
                                                         </div>
                                                     </div>
                                                 {:else}
