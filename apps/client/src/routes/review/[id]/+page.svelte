@@ -14,6 +14,9 @@
     import type { PageProps } from "./$types";
     import { readReviewListBackHref } from "../filterQuery.js";
     import { untrack } from "svelte";
+    import { CaretRightIcon, WrenchIcon } from "phosphor-svelte";
+    import { serializeActivityLogList } from "./activity-log.js";
+    import { toolIconRecord, transformToolName } from "$lib/utils/tool.js";
 
     const POLL_MS = 1000;
 
@@ -150,8 +153,9 @@
         return `${stripe} hover:bg-accent/80`;
     }
 
-    const labelList = $derived([...new Set(log.logs.map((entry) => entry.label))]);
-    const visibleLogList = $derived(log.logs.filter((entry) => !selectedLabel || entry.label === selectedLabel));
+    const logRowList = $derived(serializeActivityLogList(log.logs));
+    const labelList = $derived([...new Set(logRowList.map((row) => row.entry.label))]);
+    const visibleLogList = $derived(logRowList.filter((row) => !selectedLabel || row.entry.label === selectedLabel));
 
     async function refreshWhileRunning(id: number): Promise<void> {
         const [logResponse, metaResponse] = await Promise.all([
@@ -322,28 +326,70 @@
                 {#if visibleLogList.length === 0}
                     <p class="px-3 py-8 text-center text-xs text-muted-foreground">No log entries yet.</p>
                 {:else}
-                    <ul class="max-h-[32rem] overflow-y-auto py-1 text-xs leading-5 tracking-tight">
-                        {#each visibleLogList as entry, index (index)}
-                            <li class="group flex gap-2.5 px-2 py-0.5 {logRowClass(entry.level, index)}">
-                                <span class="hidden shrink-0 text-muted-foreground md:inline">{entry.label}</span>
-                                <span class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
-                                    {#if entry.type !== "common"}
-                                        <span class="block font-semibold">
-                                            {entry.type === "tool-call"
-                                                ? "Call"
-                                                : entry.type === "tool-result"
-                                                  ? "Result"
-                                                  : "Error"}
-                                            · {entry.toolName}
-                                        </span>
+                    {#key review.id}
+                        <ul class="max-h-[32rem] overflow-y-auto py-1 text-xs leading-5 tracking-tight">
+                            {#each visibleLogList as row, index (row.key)}
+                                {@const entry = row.entry}
+                                <li class={logRowClass(entry.level, index)}>
+                                    {#if entry.type === "tool-call"}
+                                        {@const ToolIcon = Object.hasOwn(toolIconRecord, entry.toolName)
+                                            ? toolIconRecord[entry.toolName]
+                                            : WrenchIcon}
+                                        <details class="group/tool">
+                                            <summary
+                                                class="group flex cursor-pointer list-none gap-2.5 px-2 py-0.5 [&::-webkit-details-marker]:hidden">
+                                                <span class="hidden shrink-0 text-muted-foreground md:inline"
+                                                    >{entry.label}</span>
+                                                <ToolIcon
+                                                    size={16}
+                                                    class="mt-0.5 shrink-0 text-muted-foreground"
+                                                    aria-hidden="true" />
+                                                <span
+                                                    class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
+                                                    <span class="block font-semibold">{transformToolName(entry.toolName)}</span>
+                                                    <span class="whitespace-pre-wrap">{entry.message}</span><span
+                                                        class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                                                        >{formatLogTime(entry.timestamp)}</span>
+                                                </span>
+                                                <CaretRightIcon
+                                                    size={14}
+                                                    class="mt-0.5 shrink-0 text-muted-foreground transition-transform group-open/tool:rotate-90"
+                                                    aria-hidden="true" />
+                                            </summary>
+                                            <div class="mx-2 pb-2">
+                                                {#if row.result}
+                                                    <div
+                                                        class="group min-w-0 break-words {logLevelTextColor(
+                                                            row.result.level,
+                                                        )}">
+                                                        <!-- <span class="block font-semibold">Result</span> -->
+                                                        <div class="px-2 py-1.5 border border-border rounded-sm bg-card text-secondary-foreground">
+                                                            <span class="whitespace-pre-wrap">{row.result.message}</span>
+                                                        </div>
+                                                    </div>
+                                                {:else}
+                                                    <p class="text-muted-foreground">No result recorded.</p>
+                                                {/if}
+                                            </div>
+                                        </details>
+                                    {:else}
+                                        <div class="group flex gap-2.5 px-2 py-0.5">
+                                            <span class="hidden shrink-0 text-muted-foreground md:inline"
+                                                >{entry.label}</span>
+                                            <span class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
+                                                {#if entry.type === "tool-error"}
+                                                    <span class="block font-semibold">Error · {entry.toolName}</span>
+                                                {/if}
+                                                <span class="whitespace-pre-wrap">{entry.message}</span><span
+                                                    class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                                    >{formatLogTime(entry.timestamp)}</span>
+                                            </span>
+                                        </div>
                                     {/if}
-                                    <span class="whitespace-pre-wrap">{entry.message}</span><span
-                                        class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                                        >{formatLogTime(entry.timestamp)}</span>
-                                </span>
-                            </li>
-                        {/each}
-                    </ul>
+                                </li>
+                            {/each}
+                        </ul>
+                    {/key}
                 {/if}
             </div>
         </Card>
