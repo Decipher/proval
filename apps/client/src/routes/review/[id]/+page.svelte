@@ -318,19 +318,29 @@
                     {/each}
                 </div>
             {/if}
-            <div class="overflow-hidden rounded-md border border-border bg-background">
+            <div class="overflow-hidden rounded-md border border-border bg-background font-code [&_*]:font-code">
                 {#if visibleLogList.length === 0}
-                    <p class="px-3 py-8 text-center font-mono text-xs text-muted-foreground">No log entries yet.</p>
+                    <p class="px-3 py-8 text-center text-xs text-muted-foreground">No log entries yet.</p>
                 {:else}
-                    <ul class="max-h-[32rem] overflow-y-auto py-1 font-mono text-[11px] leading-5 tracking-tight">
+                    <ul class="max-h-[32rem] overflow-y-auto py-1 text-xs leading-5 tracking-tight">
                         {#each visibleLogList as entry, index (index)}
-                            <li class="group flex gap-2.5 px-3 py-1.5 md:py-1 {logRowClass(entry.level, index)}">
+                            <li class="group flex gap-2.5 px-2 py-0.5 {logRowClass(entry.level, index)}">
                                 <span class="hidden shrink-0 text-muted-foreground md:inline">{entry.label}</span>
-                                <span class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}"
-                                    >{entry.message}<span
+                                <span class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
+                                    {#if entry.type !== "common"}
+                                        <span class="block font-semibold">
+                                            {entry.type === "tool-call"
+                                                ? "Call"
+                                                : entry.type === "tool-result"
+                                                  ? "Result"
+                                                  : "Error"}
+                                            · {entry.toolName}
+                                        </span>
+                                    {/if}
+                                    <span class="whitespace-pre-wrap">{entry.message}</span><span
                                         class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                                        >{formatLogTime(entry.timestamp)}</span
-                                    ></span>
+                                        >{formatLogTime(entry.timestamp)}</span>
+                                </span>
                             </li>
                         {/each}
                     </ul>
