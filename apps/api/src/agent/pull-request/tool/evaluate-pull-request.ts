@@ -18,7 +18,7 @@ export function evaluatePullRequestTool(provider: GitProvider, prIid: number): A
             required: ["isGood"],
         },
         execute: async (args) => {
-            const isGood = Boolean(args.isGood);
+            const isGood = args.isGood === true;
             if (isGood) {
                 await provider.addEmoji({ type: "pull_request", prIid }, "👍");
             }
