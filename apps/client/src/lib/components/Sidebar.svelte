@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import ProvalMark from "$lib/components/atom/ProvalMark.svelte";
+    import ThemeToggle from "$lib/components/atom/ThemeToggle.svelte";
     import { HouseIcon, GitForkIcon, CubeIcon, GitBranchIcon, ChatCircleTextIcon, GearIcon } from "phosphor-svelte";
     import type { Component } from "svelte";
 
@@ -66,30 +67,27 @@
     }
 </script>
 
-<div class="h-full min-h-screen w-full bg-neutral-100 px-4 py-4">
+<div class="sticky top-0 flex h-dvh w-full flex-col overflow-y-auto bg-sidebar px-4 py-4 text-sidebar-foreground">
     <div class="px-3.5">
         <a href="/" class="inline-flex items-center" aria-label="Proval home">
-            <ProvalMark
-                wordmark
-                class="size-8"
-                wordmarkClass="text-2xl font-semibold tracking-tight text-neutral-800" />
+            <ProvalMark wordmark class="size-8" wordmarkClass="text-2xl font-semibold tracking-tight text-foreground" />
         </a>
     </div>
-    <div class="mt-4 divide-y divide-neutral-300">
+    <div class="mt-4 divide-y divide-sidebar-border">
         {#each sidebarItemList as itemGroup}
             <div class="py-3">
-                <!-- <h2 class="h-6 leading-6 tracking-tight cursor-default text-neutral-500 text-sm px-2">{itemGroup.label}</h2> -->
+                <!-- <h2 class="h-6 leading-6 tracking-tight cursor-default text-muted-foreground text-sm px-2">{itemGroup.label}</h2> -->
                 <ul class="space-y-1">
                     {#each itemGroup.items as item}
                         <li>
                             <a class="" href={item.href}>
                                 <span
-                                    class="flex h-10 items-center gap-2 rounded-md px-3.5 text-sm tracking-wide transition-colors hover:bg-primary hover:text-neutral-100 {isActive(
+                                    class="flex h-10 items-center gap-2 rounded-md px-3.5 text-sm tracking-wide transition-colors hover:bg-sidebar-primary hover:text-sidebar-primary-foreground {isActive(
                                         item.href,
                                         $page.url.pathname,
                                     )
-                                        ? 'bg-primary text-neutral-100'
-                                        : 'text-neutral-500'}">
+                                        ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                        : 'text-muted-foreground'}">
                                     <svelte:component this={item.icon} class="size-5" />
                                     {item.label}
                                 </span>
@@ -99,5 +97,8 @@
                 </ul>
             </div>
         {/each}
+    </div>
+    <div class="mt-auto flex pt-6">
+        <ThemeToggle side="top" align="start" />
     </div>
 </div>

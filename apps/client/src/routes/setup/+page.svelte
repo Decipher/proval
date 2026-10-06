@@ -40,8 +40,8 @@
 
 <div class="w-full">
     <div class="mb-8 flex flex-col items-center text-center">
-        <ProvalMark wordmark class="size-10" wordmarkClass="text-3xl font-semibold tracking-tight text-neutral-800" />
-        <p class="mt-3 text-sm text-neutral-500">Create the admin account to get started.</p>
+        <ProvalMark wordmark class="size-10" wordmarkClass="text-3xl font-semibold tracking-tight text-foreground" />
+        <p class="mt-3 text-sm text-muted-foreground">Create the admin account to get started.</p>
     </div>
     <Card border title="Initial setup">
         <form class="space-y-4" onsubmit={onSubmit}>
@@ -62,7 +62,7 @@
                 {/snippet}
             </FormField>
             {#if errorMessage}
-                <p class="text-sm text-red-600">{errorMessage}</p>
+                <p class="text-sm text-destructive">{errorMessage}</p>
             {/if}
             <Button type="submit" primary class="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Creating…" : "Create admin account"}

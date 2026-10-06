@@ -40,8 +40,8 @@
 
 <div class="w-full">
     <div class="mb-8 flex flex-col items-center text-center">
-        <ProvalMark wordmark class="size-10" wordmarkClass="text-3xl font-semibold tracking-tight text-neutral-800" />
-        <p class="mt-3 text-sm text-neutral-500">Create a new account.</p>
+        <ProvalMark wordmark class="size-10" wordmarkClass="text-3xl font-semibold tracking-tight text-foreground" />
+        <p class="mt-3 text-sm text-muted-foreground">Create a new account.</p>
     </div>
     <Card border title="Register">
         <form class="space-y-4" onsubmit={onSubmit}>
@@ -62,15 +62,15 @@
                 {/snippet}
             </FormField>
             {#if errorMessage}
-                <p class="text-sm text-red-600">{errorMessage}</p>
+                <p class="text-sm text-destructive">{errorMessage}</p>
             {/if}
             <Button type="submit" primary class="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Creating…" : "Create account"}
             </Button>
         </form>
-        <p class="mt-4 text-center text-sm text-neutral-500">
+        <p class="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?
-            <a href="/login" class="font-medium text-primary hover:underline">Sign in</a>
+            <a href="/login" class="font-medium text-primary-text hover:underline">Sign in</a>
         </p>
     </Card>
 </div>

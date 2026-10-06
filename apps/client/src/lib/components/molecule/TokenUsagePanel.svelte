@@ -16,9 +16,9 @@
     const PAD = { top: 12, right: 8, bottom: 4, left: 0 };
     const BAR_GAP_RATIO = 0.35;
 
-    const COLOR_INPUT = "var(--primary)";
-    const COLOR_OUTPUT = "rgb(130, 99, 240)";
-    const COLOR_CACHE = "rgb(232, 237, 243)";
+    const COLOR_INPUT = "var(--chart-1)";
+    const COLOR_OUTPUT = "var(--chart-2)";
+    const COLOR_CACHE = "var(--chart-3)";
 
     const RANGE_SUBTITLE: Record<DashboardRange, string> = {
         "24h": "last 24 hours",
@@ -276,17 +276,17 @@
 
 {#snippet breakdownList(title: string, items: TokenBreakdownItem[])}
     <div class="min-w-0">
-        <p class="text-[11px] font-medium tracking-wide text-neutral-400 uppercase">{title}</p>
+        <p class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{title}</p>
         {#if items.length === 0}
-            <p class="mt-1.5 text-xs text-neutral-400">—</p>
+            <p class="mt-1.5 text-xs text-muted-foreground">—</p>
         {:else}
             <ul class="mt-1.5 space-y-1">
                 {#each items as item (item.label)}
                     <li class="flex items-baseline justify-between gap-2 text-xs">
-                        <span class="min-w-0 truncate text-neutral-600 dark:text-neutral-300" title={item.label}>
+                        <span class="min-w-0 truncate text-secondary-foreground" title={item.label}>
                             {shortLabel(item.label)}
                         </span>
-                        <span class="shrink-0 text-neutral-800 tabular-nums dark:text-neutral-100">
+                        <span class="shrink-0 text-foreground tabular-nums">
                             {formatTokens(item.tokens)}
                         </span>
                     </li>
@@ -300,20 +300,21 @@
     {@const meta = SEGMENT_META.find((item) => item.key === key)!}
     <li class="flex items-center gap-2 text-sm">
         <span class="size-2 shrink-0 rounded-full" style="background-color: {meta.color}"></span>
-        <span class="min-w-0 flex-1 text-neutral-600 dark:text-neutral-300">{meta.label}</span>
-        <span class="shrink-0 text-neutral-800 tabular-nums dark:text-neutral-100">{formatTokensFull(value)}</span>
-        <span class="w-10 shrink-0 text-right text-neutral-400 tabular-nums">{segmentPercent(value, segmentSum)}</span>
+        <span class="min-w-0 flex-1 text-secondary-foreground">{meta.label}</span>
+        <span class="shrink-0 text-foreground tabular-nums">{formatTokensFull(value)}</span>
+        <span class="w-10 shrink-0 text-right text-muted-foreground tabular-nums"
+            >{segmentPercent(value, segmentSum)}</span>
     </li>
 {/snippet}
 
-<div class="rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+<div class="rounded-lg border border-border bg-card">
     <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-4 px-5 pt-5 pb-1">
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-baseline gap-2">
-                <p class="text-2xl font-semibold tracking-tight text-neutral-800 tabular-nums dark:text-neutral-100">
+                <p class="text-2xl font-semibold tracking-tight text-foreground tabular-nums">
                     {formatTokensFull(totalTokens)}
                 </p>
-                <span class="text-sm text-neutral-400">{RANGE_SUBTITLE[range]}</span>
+                <span class="text-sm text-muted-foreground">{RANGE_SUBTITLE[range]}</span>
             </div>
             {#if labeledSeries.length > 0}
                 <ul class="mt-3 max-w-sm space-y-1.5">
@@ -338,7 +339,7 @@
     <div class="px-3 pt-2 pb-4 sm:px-4">
         {#if labeledSeries.length === 0}
             <div class="flex h-44 items-center justify-center">
-                <p class="text-sm text-neutral-500">No token usage in this period.</p>
+                <p class="text-sm text-muted-foreground">No token usage in this period.</p>
             </div>
         {:else}
             <div
@@ -353,7 +354,7 @@
                         <div class="relative w-11 shrink-0" aria-hidden="true">
                             {#each yTicks as tick (tick)}
                                 <span
-                                    class="absolute right-1 -translate-y-1/2 text-[10px] leading-none text-neutral-400 tabular-nums"
+                                    class="absolute right-1 -translate-y-1/2 text-[10px] leading-none text-muted-foreground tabular-nums"
                                     style="top: {yTickTopPercent(tick, maxStack)}%">
                                     {formatTokens(tick)}
                                 </span>
@@ -366,15 +367,14 @@
                                 {@const hOutput = hoveredBar.outputToken}
                                 {@const hCache = hoveredBar.cachedInputToken}
                                 <div
-                                    class="pointer-events-none absolute top-0 z-20 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 shadow-sm dark:border-neutral-600 dark:bg-neutral-900"
+                                    class="pointer-events-none absolute top-0 z-20 -translate-x-1/2 rounded-md border border-border bg-popover px-2.5 py-1.5 text-popover-foreground shadow-sm"
                                     style="left: clamp(2rem, {leftPct}%, calc(100% - 2rem))">
-                                    <p class="text-[11px] leading-none text-neutral-400">{hoveredBar.label}</p>
-                                    <p
-                                        class="mt-1 text-sm font-semibold text-neutral-800 tabular-nums dark:text-neutral-100">
+                                    <p class="text-[11px] leading-none text-muted-foreground">{hoveredBar.label}</p>
+                                    <p class="mt-1 text-sm font-semibold text-foreground tabular-nums">
                                         {formatTokensFull(hoveredBar.tokens)}
-                                        <span class="text-xs font-normal text-neutral-400">total</span>
+                                        <span class="text-xs font-normal text-muted-foreground">total</span>
                                     </p>
-                                    <p class="mt-1 text-[11px] text-neutral-500 tabular-nums">
+                                    <p class="mt-1 text-[11px] text-muted-foreground tabular-nums">
                                         In {formatTokensFull(hInput)} · Out {formatTokensFull(hOutput)} · Cache {formatTokensFull(
                                             hCache,
                                         )}
@@ -394,7 +394,7 @@
                                         x2={plotW}
                                         y2={y}
                                         stroke="currentColor"
-                                        class="text-neutral-100 dark:text-neutral-700/80"
+                                        class="text-border/60"
                                         stroke-width="1"
                                         vector-effect="non-scaling-stroke" />
                                 {/each}
@@ -405,7 +405,7 @@
                                     x2={plotW}
                                     y2={baselineY}
                                     stroke="currentColor"
-                                    class="text-neutral-200 dark:text-neutral-600"
+                                    class="text-border"
                                     stroke-width="1"
                                     vector-effect="non-scaling-stroke" />
 
@@ -438,7 +438,7 @@
                                         y1={PAD.top}
                                         x2={hoveredBar.centerX}
                                         y2={baselineY}
-                                        stroke="var(--primary)"
+                                        stroke="var(--chart-1)"
                                         stroke-opacity="0.22"
                                         stroke-width="1"
                                         stroke-dasharray="4 3"
@@ -455,7 +455,7 @@
                 <div class="relative min-w-0 flex-1">
                     {#each xTicks as tick (tick.index)}
                         <span
-                            class="absolute text-[11px] text-neutral-400 {tick.align === 'start'
+                            class="absolute text-[11px] text-muted-foreground {tick.align === 'start'
                                 ? 'translate-x-0'
                                 : tick.align === 'end'
                                   ? '-translate-x-full'

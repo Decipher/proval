@@ -20,8 +20,8 @@
     class={twMerge(
         `flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border px-4 py-3 text-center transition-colors ${
             selected
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-neutral-200 text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-400"
+                ? "border-primary bg-primary/5 text-primary-text"
+                : "border-border text-secondary-foreground hover:border-border-strong"
         }`,
         className,
     )}
@@ -40,6 +40,6 @@
     {/if}
     <p class="text-sm font-medium">{label}</p>
     {#if description}
-        <p class="mt-1 text-xs text-neutral-500">{description}</p>
+        <p class="mt-1 text-xs text-muted-foreground">{description}</p>
     {/if}
 </button>

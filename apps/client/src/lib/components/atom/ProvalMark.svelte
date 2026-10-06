@@ -5,7 +5,7 @@
     let {
         class: className = "size-7",
         wordmark = false,
-        wordmarkClass = "text-3xl font-semibold tracking-tight text-neutral-800",
+        wordmarkClass = "text-3xl font-semibold tracking-tight text-foreground",
     }: {
         class?: string;
         wordmark?: boolean;

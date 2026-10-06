@@ -1,12 +1,15 @@
 <script lang="ts">
     import "./layout.css";
+    import { onMount } from "svelte";
     import { afterNavigate } from "$app/navigation";
     import { page } from "$app/state";
     import Sidebar from "$lib/components/Sidebar.svelte";
     import ProvalMark from "$lib/components/atom/ProvalMark.svelte";
+    import ThemeToggle from "$lib/components/atom/ThemeToggle.svelte";
     import ModalRoot from "$lib/components/organism/ModalRoot.svelte";
     import { isDemoMode } from "$lib/demo/enabled";
     import { isAuthPagePath } from "$lib/auth";
+    import { initializeTheme } from "$lib/store/theme";
 
     const GITHUB_URL = "https://github.com/seoes/proval";
 
@@ -16,6 +19,8 @@
     let sidebarAnimate = $state(false);
 
     const isLayoutHidden = $derived(isAuthPagePath(page.url.pathname));
+
+    onMount(initializeTheme);
 
     function toggleSidebar() {
         sidebarAnimate = true;
@@ -56,12 +61,14 @@
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#fafafa" />
 </svelte:head>
 
 {#if isLayoutHidden}
-    <div class="min-h-screen bg-neutral-50">
-        <main class="mx-auto flex min-h-screen max-w-md items-center px-4 py-10">
+    <div class="relative min-h-screen bg-background">
+        <div class="absolute top-4 right-4">
+            <ThemeToggle />
+        </div>
+        <main class="mx-auto flex min-h-screen max-w-md items-center px-4 py-20">
             {@render children?.()}
         </main>
     </div>
@@ -71,27 +78,27 @@
         {#if sidebarOpen}
             <button
                 type="button"
-                class="fixed inset-0 z-40 bg-black/40 lg:hidden"
+                class="fixed inset-0 z-40 bg-overlay/40 lg:hidden"
                 aria-label="Close menu"
                 onclick={closeSidebar}></button>
         {/if}
 
         <aside
-            class="fixed inset-y-0 left-0 z-50 w-84 border-r border-neutral-300 lg:static {sidebarAnimate
+            class="fixed inset-y-0 left-0 z-50 w-84 border-r border-sidebar-border lg:static {sidebarAnimate
                 ? 'max-lg:transition-transform max-lg:duration-200 max-lg:ease-in-out'
                 : ''} {sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}">
             <Sidebar />
         </aside>
 
-        <div class="flex min-w-0 flex-1 flex-col bg-neutral-50">
+        <div class="flex min-w-0 flex-1 flex-col bg-background">
             {#if demoMode}
-                <div class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
+                <div class="border-b border-warning/25 bg-warning-muted px-4 py-2 text-center text-sm text-warning">
                     Demo mode — sample data, read-only.
                     <a
                         href={GITHUB_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="ml-1 font-medium underline underline-offset-2 hover:text-amber-950">
+                        class="ml-1 font-medium underline underline-offset-2 hover:text-warning">
                         View on GitHub
                     </a>
                 </div>
@@ -101,7 +108,7 @@
                 <header class="relative flex h-16 items-center justify-between lg:hidden">
                     <button
                         type="button"
-                        class="cursor-pointer rounded-md p-2 text-neutral-800"
+                        class="cursor-pointer rounded-md p-2 text-foreground"
                         aria-expanded={sidebarOpen}
                         aria-label="Toggle menu"
                         onclick={toggleSidebar}>
@@ -121,7 +128,7 @@
                         <ProvalMark
                             wordmark
                             class="size-7"
-                            wordmarkClass="text-2xl font-semibold tracking-tight text-neutral-800" />
+                            wordmarkClass="text-2xl font-semibold tracking-tight text-foreground" />
                     </a>
                     <div class="size-10" aria-hidden="true"></div>
                 </header>

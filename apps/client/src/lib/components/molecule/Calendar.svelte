@@ -94,20 +94,20 @@
         const weekday = dateOnlyToLocalDate(cell.dateOnly)?.getDay() ?? 0;
         let weekendText = "";
         if (!isEndpoint) {
-            if (weekday === 0) weekendText = cell.inMonth ? "text-red-500/75" : "text-red-400/60";
-            if (weekday === 6) weekendText = cell.inMonth ? "text-blue-500/75" : "text-blue-400/60";
+            if (weekday === 0) weekendText = cell.inMonth ? "text-calendar-sunday" : "text-calendar-sunday/60";
+            if (weekday === 6) weekendText = cell.inMonth ? "text-calendar-saturday" : "text-calendar-saturday/60";
         }
 
         return twMerge(
             "relative flex h-9 w-9 cursor-pointer items-center justify-center text-sm transition-colors",
-            !cell.inMonth && !weekendText && "text-neutral-400",
-            cell.inMonth && !isEndpoint && !inRange && !weekendText && "text-neutral-800",
+            !cell.inMonth && !weekendText && "text-muted-foreground",
+            cell.inMonth && !isEndpoint && !inRange && !weekendText && "text-foreground",
             weekendText,
             inRange && !isEndpoint && "bg-primary/10",
-            inRange && !isEndpoint && !weekendText && "text-neutral-900",
+            inRange && !isEndpoint && !weekendText && "text-foreground",
             isEndpoint && "rounded-lg bg-primary font-medium text-primary-foreground",
-            isToday && !isEndpoint && !weekendText && "font-semibold text-primary",
-            !isEndpoint && !inRange && "rounded-lg hover:bg-neutral-100",
+            isToday && !isEndpoint && !weekendText && "font-semibold text-primary-text",
+            !isEndpoint && !inRange && "rounded-lg hover:bg-accent",
         );
     }
 
@@ -125,7 +125,7 @@
 
 <div
     class={twMerge(
-        "w-[19rem] rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-700 dark:bg-white",
+        "w-[19rem] rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg  ",
         className,
     )}
     role="application"
@@ -133,7 +133,7 @@
     <div class="mb-3 flex items-center justify-between gap-2">
         <button
             type="button"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition-colors hover:bg-neutral-100"
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-secondary-foreground transition-colors hover:bg-accent"
             aria-label="Previous month"
             onclick={() => {
                 if (visibleMonth === 0) {
@@ -150,10 +150,10 @@
                     clip-rule="evenodd" />
             </svg>
         </button>
-        <p class="text-sm font-medium text-neutral-900">{monthTitle}</p>
+        <p class="text-sm font-medium text-foreground">{monthTitle}</p>
         <button
             type="button"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition-colors hover:bg-neutral-100"
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-secondary-foreground transition-colors hover:bg-accent"
             aria-label="Next month"
             onclick={() => {
                 if (visibleMonth === 11) {
@@ -177,9 +177,9 @@
             <div
                 class={twMerge(
                     "flex h-8 items-center justify-center text-xs font-medium",
-                    index === 0 && "text-red-500/80",
-                    index === 6 && "text-blue-500/80",
-                    index !== 0 && index !== 6 && "text-neutral-500",
+                    index === 0 && "text-calendar-sunday",
+                    index === 6 && "text-calendar-saturday",
+                    index !== 0 && index !== 6 && "text-muted-foreground",
                 )}>
                 {label}
             </div>
@@ -202,5 +202,5 @@
         {/each}
     </div>
 
-    <p class="mt-3 text-xs text-neutral-500">Click a start date, then an end date.</p>
+    <p class="mt-3 text-xs text-muted-foreground">Click a start date, then an end date.</p>
 </div>

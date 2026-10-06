@@ -9,10 +9,7 @@
     import { activityStatusBadge, activityTargetLabel, activityTypeLabel } from "$lib/utils/label";
     import { formatDuration, formatTimeAgo } from "$lib/utils";
     import fetchApi from "$lib/utils";
-    import {
-        activityTargetWebUrl,
-        viewInProviderLabel,
-    } from "../../repository/[id]/load.js";
+    import { activityTargetWebUrl, viewInProviderLabel } from "../../repository/[id]/load.js";
     import type { ActivityLogEntry, ActivityLogResponse, ActivityResponse } from "@proval/types";
     import type { PageProps } from "./$types";
     import { readReviewListBackHref } from "../filterQuery.js";
@@ -133,24 +130,24 @@
     function logLevelTextColor(level: ActivityLogEntry["level"]): string {
         switch (level) {
             case "error":
-                return "text-red-700";
+                return "text-destructive";
             case "warn":
-                return "text-amber-700";
+                return "text-warning";
             case "debug":
-                return "text-neutral-400";
+                return "text-muted-foreground";
             case "info":
-                return "text-neutral-800";
+                return "text-foreground";
             default:
-                return "text-neutral-800";
+                return "text-foreground";
         }
     }
 
     function logRowClass(level: ActivityLogEntry["level"], index: number): string {
         if (level === "error") {
-            return "bg-red-50 hover:bg-red-50/80";
+            return "bg-destructive-muted hover:bg-destructive-muted/80";
         }
-        const stripe = index % 2 === 1 ? "bg-neutral-100/80 md:bg-transparent" : "";
-        return `${stripe} hover:bg-neutral-100/80`;
+        const stripe = index % 2 === 1 ? "bg-muted/80 md:bg-transparent" : "";
+        return `${stripe} hover:bg-accent/80`;
     }
 
     const labelList = $derived([...new Set(log.logs.map((entry) => entry.label))]);
@@ -197,7 +194,7 @@
 <DefaultLayout title="Review">
     <a
         href={backToListHref}
-        class="mb-4 inline-block text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900">
+        class="mb-4 inline-block text-sm font-medium text-secondary-foreground transition-colors hover:text-foreground">
         ← Back to list
     </a>
 
@@ -208,49 +205,49 @@
                     {#if review.repositoryId}
                         <a
                             href="/repository/{review.repositoryId}"
-                            class="truncate text-base font-medium text-neutral-900 underline-offset-2 transition-colors hover:text-primary hover:underline">
+                            class="truncate text-base font-medium text-foreground underline-offset-2 transition-colors hover:text-primary-text hover:underline">
                             {review.repositoryPath}
                         </a>
                     {:else}
-                        <span class="truncate text-base font-medium text-neutral-900">{review.repositoryPath}</span>
+                        <span class="truncate text-base font-medium text-foreground">{review.repositoryPath}</span>
                     {/if}
                     <Badge variant={status.variant}>{status.label}</Badge>
                 </div>
-                <p class="mt-1 text-sm text-neutral-500">
+                <p class="mt-1 text-sm text-muted-foreground">
                     {target}
-                    <span class="text-neutral-300">·</span>
+                    <span class="text-border-strong">·</span>
                     {typeLabel}
-                    <span class="text-neutral-300">·</span>
+                    <span class="text-border-strong">·</span>
                     {review.modelName}
                     {#if review.headSha}
-                        <span class="text-neutral-300">·</span>
-                        <span class="font-mono text-neutral-600">{review.headSha.slice(0, 7)}</span>
+                        <span class="text-border-strong">·</span>
+                        <span class="font-mono text-secondary-foreground">{review.headSha.slice(0, 7)}</span>
                     {/if}
                 </p>
             </div>
             <div class="shrink-0 space-y-1 text-right text-xs">
                 <div>
-                    <span class="text-neutral-400">Started</span>
-                    <span class="ml-1.5 text-neutral-600">{formatTimeAgo(review.createdAt)}</span>
+                    <span class="text-muted-foreground">Started</span>
+                    <span class="ml-1.5 text-secondary-foreground">{formatTimeAgo(review.createdAt)}</span>
                 </div>
                 {#if durationLabel}
                     <div>
-                        <span class="text-neutral-400">Duration</span>
-                        <span class="ml-1.5 font-medium text-neutral-800 tabular-nums">{durationLabel}</span>
+                        <span class="text-muted-foreground">Duration</span>
+                        <span class="ml-1.5 font-medium text-foreground tabular-nums">{durationLabel}</span>
                     </div>
                 {/if}
             </div>
         </div>
 
         {#if review.status === "failed" && review.errorMessage}
-            <div class="mt-3 rounded-md bg-red-50 px-3 py-2">
-                <p class="line-clamp-5 text-sm break-words whitespace-pre-wrap text-red-700">
+            <div class="mt-3 rounded-md bg-destructive-muted px-3 py-2">
+                <p class="line-clamp-5 text-sm break-words whitespace-pre-wrap text-destructive">
                     {review.errorMessage}
                 </p>
                 {#if showFullErrorButton}
                     <button
                         type="button"
-                        class="mt-1.5 cursor-pointer text-xs font-medium text-red-700 underline-offset-2 hover:underline"
+                        class="mt-1.5 cursor-pointer text-xs font-medium text-destructive underline-offset-2 hover:underline"
                         onclick={() => (errorModalOpen = true)}>
                         View full
                     </button>
@@ -258,46 +255,38 @@
             </div>
         {/if}
 
-        <div class="mt-4 border-t border-neutral-100 pt-3">
+        <div class="mt-4 border-t border-border pt-3">
             <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-3">
                 <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                     <div>
-                        <span class="text-neutral-500">Input</span>
-                        <span class="ml-1.5 font-medium text-neutral-800 tabular-nums"
+                        <span class="text-muted-foreground">Input</span>
+                        <span class="ml-1.5 font-medium text-foreground tabular-nums"
                             >{formatToken(review.inputToken)}</span>
                     </div>
                     <div>
-                        <span class="text-neutral-500">Cached</span>
-                        <span class="ml-1.5 font-medium text-neutral-800 tabular-nums"
+                        <span class="text-muted-foreground">Cached</span>
+                        <span class="ml-1.5 font-medium text-foreground tabular-nums"
                             >{formatToken(review.cachedInputToken)}</span>
                     </div>
                     <div>
-                        <span class="text-neutral-500">Output</span>
-                        <span class="ml-1.5 font-medium text-neutral-800 tabular-nums"
+                        <span class="text-muted-foreground">Output</span>
+                        <span class="ml-1.5 font-medium text-foreground tabular-nums"
                             >{formatToken(review.outputToken)}</span>
                     </div>
                     <div>
-                        <span class="text-neutral-500">Cache Rate</span>
-                        <span class="ml-1.5 font-medium text-neutral-800 tabular-nums">{cacheRateLabel}</span>
+                        <span class="text-muted-foreground">Cache Rate</span>
+                        <span class="ml-1.5 font-medium text-foreground tabular-nums">{cacheRateLabel}</span>
                     </div>
                 </div>
                 {#if targetWebUrl || canCancel || canRetry}
                     <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 md:ml-4">
                         {#if targetWebUrl}
-                            <Button
-                                href={targetWebUrl}
-                                secondary
-                                target="_blank"
-                                rel="noopener noreferrer">
+                            <Button href={targetWebUrl} secondary target="_blank" rel="noopener noreferrer">
                                 {viewInGitLabel}
                             </Button>
                         {/if}
                         {#if canCancel}
-                            <Button
-                                secondary
-                                type="button"
-                                disabled={isCanceling}
-                                onclick={() => void onCancel()}>
+                            <Button secondary type="button" disabled={isCanceling} onclick={() => void onCancel()}>
                                 {isCanceling ? "Canceling…" : "Cancel job"}
                             </Button>
                         {:else if canRetry}
@@ -313,7 +302,7 @@
 
     <div class="mt-4">
         <Card>
-            <h2 class="mb-2 text-sm font-medium text-neutral-800">Log</h2>
+            <h2 class="mb-2 text-sm font-medium text-foreground">Log</h2>
             {#if labelList.length > 0}
                 <div class="mb-3 flex gap-1.5 overflow-x-auto">
                     {#each [null, ...labelList] as label (label ?? "all")}
@@ -321,25 +310,25 @@
                             type="button"
                             class="shrink-0 cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium {selectedLabel ===
                             label
-                                ? 'border-primary bg-primary text-white'
-                                : 'border-neutral-200 text-neutral-600'}"
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border text-secondary-foreground'}"
                             onclick={() => (selectedLabel = label)}>
                             {label?.split("] ").at(-1) ?? "All"}
                         </button>
                     {/each}
                 </div>
             {/if}
-            <div class="overflow-hidden rounded-md border border-neutral-200 bg-neutral-50">
+            <div class="overflow-hidden rounded-md border border-border bg-background">
                 {#if visibleLogList.length === 0}
-                    <p class="px-3 py-8 text-center font-mono text-xs text-neutral-400">No log entries yet.</p>
+                    <p class="px-3 py-8 text-center font-mono text-xs text-muted-foreground">No log entries yet.</p>
                 {:else}
                     <ul class="max-h-[32rem] overflow-y-auto py-1 font-mono text-[11px] leading-5 tracking-tight">
                         {#each visibleLogList as entry, index (index)}
                             <li class="group flex gap-2.5 px-3 py-1.5 md:py-1 {logRowClass(entry.level, index)}">
-                                <span class="hidden shrink-0 text-neutral-400 md:inline">{entry.label}</span>
+                                <span class="hidden shrink-0 text-muted-foreground md:inline">{entry.label}</span>
                                 <span class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}"
                                     >{entry.message}<span
-                                        class="ml-2 inline-block font-normal text-neutral-300 opacity-0 transition-opacity group-hover:opacity-100"
+                                        class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                                         >{formatLogTime(entry.timestamp)}</span
                                     ></span>
                             </li>
@@ -353,9 +342,9 @@
 
 {#if review.errorMessage}
     <Modal bind:open={errorModalOpen} class="max-w-2xl">
-        <h3 class="mb-3 text-lg font-semibold tracking-tight text-neutral-900">Error</h3>
+        <h3 class="mb-3 text-lg font-semibold tracking-tight text-foreground">Error</h3>
         <pre
-            class="max-h-[min(28rem,70vh)] overflow-auto rounded-md bg-red-50 px-3 py-2 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-red-800">{review.errorMessage}</pre>
+            class="max-h-[min(28rem,70vh)] overflow-auto rounded-md bg-destructive-muted px-3 py-2 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-destructive">{review.errorMessage}</pre>
         <div class="mt-6 flex justify-end">
             <Button primary onclick={() => (errorModalOpen = false)}>Close</Button>
         </div>

@@ -168,27 +168,27 @@
                     <GitProviderIcon provider="github" boxed />
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <p class="truncate font-medium text-neutral-800">{app.slug}</p>
+                            <p class="truncate font-medium text-foreground">{app.slug}</p>
                             <span
-                                class="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 uppercase">
+                                class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-secondary-foreground uppercase">
                                 github
                             </span>
                         </div>
-                        <p class="truncate text-sm text-neutral-500">App ID: {app.appId}</p>
+                        <p class="truncate text-sm text-muted-foreground">App ID: {app.appId}</p>
                     </div>
                 </div>
                 <button
-                    class="rounded p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
                     onclick={deleteApp}
                     disabled={isDeletingApp}>
                     <TrashIcon class="size-4" />
                 </button>
             </div>
 
-            <div class="border-t border-neutral-200 pt-4 dark:border-neutral-700">
-                <h4 class="mb-3 text-sm font-medium text-neutral-700 dark:text-neutral-300">Connected Accounts</h4>
+            <div class="border-t border-border pt-4">
+                <h4 class="mb-3 text-sm font-medium text-foreground">Connected Accounts</h4>
                 {#if installationList.length > 0}
-                    <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
+                    <div class="divide-y divide-border">
                         {#each installationList as installation (installation.id)}
                             <GitHubInstallationItem
                                 {installation}
@@ -202,8 +202,8 @@
                     </div>
                 {:else}
                     <div class="flex flex-col items-center py-2 text-center">
-                        <p class="text-neutral-600">No connected accounts</p>
-                        <p class="mt-1 text-sm text-neutral-400">Connect a GitHub account or organization</p>
+                        <p class="text-secondary-foreground">No connected accounts</p>
+                        <p class="mt-1 text-sm text-muted-foreground">Connect a GitHub account or organization</p>
                         <Button primary onclick={getInstallUrl} disabled={isAddingInstallation} class="mt-4">
                             {isAddingInstallation ? "Opening..." : "Connect GitHub account"}
                         </Button>
@@ -214,8 +214,8 @@
     {:else}
         <div class="space-y-4">
             <div class="flex flex-col items-center py-2 text-center">
-                <p class="text-neutral-600">No GitHub App configured</p>
-                <p class="mt-1 text-sm text-neutral-400">Register a GitHub App to connect repositories</p>
+                <p class="text-secondary-foreground">No GitHub App configured</p>
+                <p class="mt-1 text-sm text-muted-foreground">Register a GitHub App to connect repositories</p>
                 <Button primary onclick={openRegisterModal} class="mt-4">Connect GitHub App</Button>
             </div>
         </div>

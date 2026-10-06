@@ -11,7 +11,7 @@
 </script>
 
 {#snippet addModelProviderAction()}
-    <Button href="/model-provider/create" size="sm" class="gap-1.5 text-neutral-900 hover:text-neutral-900/70">
+    <Button href="/model-provider/create" size="sm" class="gap-1.5 text-foreground hover:text-foreground/70">
         <PlusIcon class="size-4" />
         Add Model Provider
     </Button>
@@ -19,8 +19,8 @@
 
 <DefaultLayout title="Model Provider" actions={addModelProviderAction}>
     {#if data.modelProviderList.length === 0}
-        <div class="rounded-lg border border-neutral-200 bg-white px-6 py-14 text-center">
-            <p class="text-sm text-neutral-500">No model providers connected yet.</p>
+        <div class="rounded-lg border border-border bg-card px-6 py-14 text-center">
+            <p class="text-sm text-muted-foreground">No model providers connected yet.</p>
             <Button primary href="/model-provider/create" size="sm" class="mt-4 gap-1.5">
                 <PlusIcon class="size-4" />
                 Add your first model provider
@@ -31,7 +31,7 @@
             {#each data.modelProviderList as modelProvider (modelProvider.id)}
                 {#snippet header()}
                     <div class="ml-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                        <span class="truncate text-sm text-neutral-800">{modelProvider.label}</span>
+                        <span class="truncate text-sm text-foreground">{modelProvider.label}</span>
                     </div>
                 {/snippet}
                 {#snippet badge()}

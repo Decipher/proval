@@ -128,7 +128,7 @@
                     </div>
 
                     {#if isAuthEnabled}
-                        <div class="flex items-start justify-between gap-4 border-t border-neutral-200 pt-6">
+                        <div class="flex items-start justify-between gap-4 border-t border-border pt-6">
                             <div>
                                 <FieldTitle class="mb-1 ml-1">Allow new user registration</FieldTitle>
                                 <Description placement="below">
@@ -142,7 +142,7 @@
                     {/if}
 
                     {#if canEditSettings}
-                        <div class="flex justify-end border-t border-neutral-200 pt-6">
+                        <div class="flex justify-end border-t border-border pt-6">
                             <Button primary disabled={!isDirty || isSaving} onclick={onSave}>
                                 {isSaving ? "Saving…" : "Save"}
                             </Button>
@@ -156,8 +156,8 @@
             <Card border title="Session">
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <p class="text-sm text-neutral-800">{data.auth.user.email}</p>
-                        <p class="mt-1 text-xs text-neutral-500 capitalize">{data.auth.user.role}</p>
+                        <p class="text-sm text-foreground">{data.auth.user.email}</p>
+                        <p class="mt-1 text-xs text-muted-foreground capitalize">{data.auth.user.role}</p>
                     </div>
                     <Button secondary disabled={isLoggingOut} onclick={onLogout}>
                         {isLoggingOut ? "Signing out…" : "Sign out"}

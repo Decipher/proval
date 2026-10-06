@@ -44,8 +44,8 @@
 
 <div class="w-full">
     <div class="mb-8 flex flex-col items-center text-center">
-        <ProvalMark wordmark class="size-10" wordmarkClass="text-3xl font-semibold tracking-tight text-neutral-800" />
-        <p class="mt-3 text-sm text-neutral-500">Sign in to continue.</p>
+        <ProvalMark wordmark class="size-10" wordmarkClass="text-3xl font-semibold tracking-tight text-foreground" />
+        <p class="mt-3 text-sm text-muted-foreground">Sign in to continue.</p>
     </div>
     <Card border title="Login">
         <form class="space-y-4" onsubmit={onSubmit}>
@@ -60,16 +60,16 @@
                 {/snippet}
             </FormField>
             {#if errorMessage}
-                <p class="text-sm text-red-600">{errorMessage}</p>
+                <p class="text-sm text-destructive">{errorMessage}</p>
             {/if}
             <Button type="submit" primary class="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
         </form>
         {#if data.auth.isRegistrationEnabled}
-            <p class="mt-4 text-center text-sm text-neutral-500">
+            <p class="mt-4 text-center text-sm text-muted-foreground">
                 No account?
-                <a href="/register" class="font-medium text-primary hover:underline">Register</a>
+                <a href="/register" class="font-medium text-primary-text hover:underline">Register</a>
             </p>
         {/if}
     </Card>

@@ -52,7 +52,7 @@
             handleClose();
         }
     }}>
-    <div class={twMerge("w-full max-w-sm rounded-xl bg-white p-6 shadow-lg dark:bg-neutral-800", className)}>
+    <div class={twMerge("w-full max-w-sm rounded-xl bg-popover p-6 text-popover-foreground shadow-lg", className)}>
         {@render children()}
     </div>
 </dialog>
@@ -78,6 +78,6 @@
     }
 
     dialog::backdrop {
-        background: rgba(0, 0, 0, 0.5);
+        background: color-mix(in srgb, var(--overlay) 50%, transparent);
     }
 </style>

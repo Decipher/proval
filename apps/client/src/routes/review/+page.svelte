@@ -66,18 +66,18 @@
         onClear={clearFilter} />
 
     {#if data.reviewList.length === 0}
-        <div class="rounded-lg border border-neutral-200 bg-white px-6 py-14 text-center dark:border-neutral-700 dark:bg-neutral-900">
+        <div class="rounded-lg border border-border bg-card px-6 py-14 text-center">
             {#if filterActive}
-                <p class="text-sm text-neutral-500">No reviews match these filters.</p>
+                <p class="text-sm text-muted-foreground">No reviews match these filters.</p>
                 <div class="mt-4">
                     <Button text size="sm" onclick={clearFilter}>Clear filters</Button>
                 </div>
             {:else}
-                <p class="text-sm text-neutral-500">No reviews yet.</p>
+                <p class="text-sm text-muted-foreground">No reviews yet.</p>
             {/if}
         </div>
     {:else}
-        <div class="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
+        <div class="overflow-hidden rounded-lg border border-border bg-card">
             {#each data.reviewList as review (review.id)}
                 {@const status = activityStatusBadge(review.status)}
                 {@const target = activityTargetLabel(review.type, review.targetIid)}
@@ -85,15 +85,15 @@
                 {@const timeLabel = formatTimeAgo(review.createdAt)}
                 {#snippet header()}
                     <div class="min-w-0">
-                        <p class="truncate text-sm font-medium text-neutral-800">
+                        <p class="truncate text-sm font-medium text-foreground">
                             {review.repositoryPath}
-                            <span class="font-normal text-neutral-500">
+                            <span class="font-normal text-muted-foreground">
                                 · {target} · {typeLabel}{#if review.headSha}
                                     · <span class="font-mono">{review.headSha.slice(0, 7)}</span>{/if}
                             </span>
                         </p>
                         {#if review.status === "failed" && review.errorMessage}
-                            <p class="mt-0.5 line-clamp-2 text-xs text-red-700 lg:line-clamp-1">
+                            <p class="mt-0.5 line-clamp-2 text-xs text-destructive lg:line-clamp-1">
                                 {review.errorMessage}
                             </p>
                         {/if}
@@ -101,24 +101,24 @@
                 {/snippet}
                 {#snippet badge()}
                     <Badge variant={status.variant}>{status.label}</Badge>
-                    <span class="text-xs text-neutral-500 lg:hidden">{review.modelName}</span>
-                    <span class="text-sm text-neutral-500 lg:hidden">{timeLabel}</span>
+                    <span class="text-xs text-muted-foreground lg:hidden">{review.modelName}</span>
+                    <span class="text-sm text-muted-foreground lg:hidden">{timeLabel}</span>
                     <Badge variant="neutral" class="hidden lg:inline-flex">{review.modelName}</Badge>
-                    <span class="hidden text-sm text-neutral-500 lg:inline">{timeLabel}</span>
+                    <span class="hidden text-sm text-muted-foreground lg:inline">{timeLabel}</span>
                 {/snippet}
                 <ResourceCard
                     compact
                     embedded
                     href="/review/{review.id}"
                     provider={review.provider}
-                    class={review.status === "failed" ? "bg-red-50/40 lg:bg-red-50/30" : ""}
+                    class={review.status === "failed" ? "bg-destructive-muted/40 lg:bg-destructive-muted/30" : ""}
                     {header}
                     {badge} />
             {/each}
         </div>
 
         {#if showPagination}
-            <div class="mt-4 flex items-center justify-between text-sm text-neutral-600">
+            <div class="mt-4 flex items-center justify-between text-sm text-secondary-foreground">
                 <span>Page {data.page}</span>
                 <div class="flex gap-2">
                     {#if hasPrev}

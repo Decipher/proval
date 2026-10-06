@@ -159,7 +159,7 @@
                 id={selectId}
                 {disabled}
                 class={twMerge(
-                    "flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 text-left text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800",
+                    "flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-input-background px-4 text-left text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                     disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                     className,
                 )}
@@ -170,15 +170,11 @@
                 role="combobox"
                 onclick={toggle}
                 onkeydown={handleKeydown}>
-                <span
-                    class={twMerge(
-                        "min-w-0 truncate",
-                        isPlaceholder ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-900 dark:text-white",
-                    )}>
+                <span class={twMerge("min-w-0 truncate", isPlaceholder ? "text-muted-foreground" : "text-foreground")}>
                     {displayLabel}
                 </span>
                 <svg
-                    class={twMerge("h-4 w-4 shrink-0 text-neutral-400 transition-transform", open && "rotate-180")}
+                    class={twMerge("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
                     viewBox="0 0 20 20"
                     fill="currentColor"
                     aria-hidden="true">
@@ -193,7 +189,7 @@
                 <ul
                     id={listboxId}
                     class={twMerge(
-                        "absolute top-full z-50 mt-1 max-h-60 w-full overflow-x-hidden overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800",
+                        "absolute top-full z-50 mt-1 max-h-60 w-full overflow-x-hidden overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-lg  ",
                         menuClass,
                     )}
                     role="listbox">
@@ -208,15 +204,17 @@
                                     "flex w-full cursor-pointer flex-col px-4 py-2 text-left transition-colors",
                                     index === 0 && "rounded-t-lg",
                                     index === options.length - 1 && "rounded-b-lg",
-                                    option.value === value || index === highlightedIndex
-                                        ? "bg-primary/5"
-                                        : "hover:bg-neutral-100 dark:hover:bg-neutral-700",
+                                    option.value === value
+                                        ? "bg-primary/10"
+                                        : index === highlightedIndex
+                                          ? "bg-accent text-accent-foreground"
+                                          : "hover:bg-accent",
                                 )}
                                 onclick={() => selectOption(option)}
                                 onpointerenter={() => (highlightedIndex = index)}>
-                                <span class="text-sm text-neutral-900 dark:text-white">{option.label}</span>
+                                <span class="text-sm text-foreground">{option.label}</span>
                                 {#if option.description}
-                                    <span class="mt-0.5 text-xs text-neutral-500">{option.description}</span>
+                                    <span class="mt-0.5 text-xs text-muted-foreground">{option.description}</span>
                                 {/if}
                             </button>
                         </li>

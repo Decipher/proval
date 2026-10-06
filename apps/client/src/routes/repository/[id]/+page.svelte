@@ -102,9 +102,7 @@
         const requestId = ++summaryRequestId;
         summaryLoading = true;
         try {
-            const response = await fetchApi(
-                `/activity/summary?range=${range}&repository=${data.repositoryId}`,
-            );
+            const response = await fetchApi(`/activity/summary?range=${range}&repository=${data.repositoryId}`);
             if (!response.ok) {
                 throw new Error("Failed to load summary");
             }
@@ -159,31 +157,31 @@
     {@const isFailed = activity.status === "failed"}
     {#snippet header()}
         <div class="min-w-0">
-            <p class="truncate text-sm font-medium {isFailed ? 'text-red-700' : 'text-neutral-800'}">
+            <p class="truncate text-sm font-medium {isFailed ? 'text-destructive' : 'text-foreground'}">
                 {target}
-                <span class="font-normal {isFailed ? 'text-red-500' : 'text-neutral-500'}">
+                <span class="font-normal {isFailed ? 'text-destructive' : 'text-muted-foreground'}">
                     · {typeLabel}{#if activity.headSha}
                         · <span class="font-mono">{activity.headSha.slice(0, 7)}</span>{/if}
                 </span>
             </p>
             {#if isFailed && activity.errorMessage}
-                <p class="mt-0.5 truncate text-xs text-red-500">{activity.errorMessage}</p>
+                <p class="mt-0.5 truncate text-xs text-destructive">{activity.errorMessage}</p>
             {/if}
         </div>
     {/snippet}
     {#snippet badge()}
         <Badge variant={status.variant}>{status.label}</Badge>
-        <span class="text-xs text-neutral-500 lg:hidden">{activity.modelName}</span>
-        <span class="text-sm text-neutral-500 lg:hidden">{timeLabel}</span>
+        <span class="text-xs text-muted-foreground lg:hidden">{activity.modelName}</span>
+        <span class="text-sm text-muted-foreground lg:hidden">{timeLabel}</span>
         <Badge variant="neutral" class="hidden lg:inline-flex">{activity.modelName}</Badge>
-        <span class="hidden text-sm text-neutral-500 lg:inline">{timeLabel}</span>
+        <span class="hidden text-sm text-muted-foreground lg:inline">{timeLabel}</span>
     {/snippet}
     <ResourceCard
         compact
         embedded
         href="/review/{activity.id}"
         provider={activity.provider}
-        class={isFailed ? "bg-red-50/60 hover:bg-red-50" : undefined}
+        class={isFailed ? "bg-destructive-muted/60 hover:bg-destructive-muted" : undefined}
         {header}
         {badge} />
 {/snippet}
@@ -198,7 +196,7 @@
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="flex min-w-0 items-start gap-3.5">
                     <div
-                        class="flex shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800"
+                        class="flex shrink-0 items-center justify-center rounded-xl bg-muted"
                         style:width="{headerIconBoxSize}px"
                         style:height="{headerIconBoxSize}px">
                         <GitProviderIcon
@@ -207,12 +205,11 @@
                             style="width: {headerIconSize}px; height: {headerIconSize}px;" />
                     </div>
                     <div class="min-w-0" bind:clientHeight={headerBlockHeight}>
-                        <h1
-                            class="pl-1 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white">
+                        <h1 class="pl-1 text-2xl font-semibold tracking-tight text-foreground">
                             {data.repository.path}
                         </h1>
                         {#if headerSubtitle}
-                            <p class="mt-1 pl-1 text-sm text-neutral-500">{headerSubtitle}</p>
+                            <p class="mt-1 pl-1 text-sm text-muted-foreground">{headerSubtitle}</p>
                         {/if}
                         <div class="mt-2 flex flex-col gap-2">
                             <div class="flex flex-wrap gap-1.5">
@@ -244,13 +241,13 @@
                             href={gitWebUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="inline-flex h-8 items-center rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+                            class="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent">
                             {openInGitText}
                         </a>
                     {/if}
                     <a
                         href="/repository/{data.repository.id}/edit"
-                        class="inline-flex size-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                        class="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-secondary-foreground transition-colors hover:bg-accent"
                         aria-label="Repository settings">
                         <GearIcon class="size-4" />
                     </a>
@@ -276,7 +273,7 @@
 
                 <div>
                     <div class="mb-3 pl-1">
-                        <h3 class="text-base font-medium text-neutral-800 dark:text-white">Token Usage</h3>
+                        <h3 class="text-base font-medium text-foreground">Token Usage</h3>
                     </div>
                     <TokenUsagePanel
                         series={tokenSeries}
@@ -287,21 +284,19 @@
 
                 <div>
                     <div class="mb-3 flex items-center justify-between gap-4 pl-1">
-                        <h3 class="text-base font-medium text-neutral-800 dark:text-white">Recent Activity</h3>
+                        <h3 class="text-base font-medium text-foreground">Recent Activity</h3>
                         <a
                             href={`/review?repository=${data.repositoryId}`}
-                            class="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-800 dark:hover:text-neutral-200">
+                            class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                             View all →
                         </a>
                     </div>
                     {#if recentList.length === 0}
-                        <div
-                            class="rounded-lg border border-neutral-200 bg-white px-6 py-10 text-center dark:border-neutral-700 dark:bg-neutral-800">
-                            <p class="text-sm text-neutral-500">No activity in this period.</p>
+                        <div class="rounded-lg border border-border bg-card px-6 py-10 text-center">
+                            <p class="text-sm text-muted-foreground">No activity in this period.</p>
                         </div>
                     {:else}
-                        <div
-                            class="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+                        <div class="overflow-hidden rounded-lg border border-border bg-card">
                             {#each recentList as activity (activity.id)}
                                 {@render activityRow(activity)}
                             {/each}

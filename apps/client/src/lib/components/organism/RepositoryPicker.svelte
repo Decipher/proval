@@ -70,18 +70,18 @@
             id={triggerId}
             {disabled}
             class={twMerge(
-                "flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 text-left text-sm outline-none dark:border-neutral-700 dark:bg-neutral-800",
+                "flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-input-background px-4 text-left text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
             )}
             onclick={openPicker}>
-            <span
-                class={twMerge(
-                    "min-w-0 truncate",
-                    isPlaceholder ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-900 dark:text-white",
-                )}>
+            <span class={twMerge("min-w-0 truncate", isPlaceholder ? "text-muted-foreground" : "text-foreground")}>
                 {displayLabel}
             </span>
-            <svg class="h-4 w-4 shrink-0 text-neutral-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <svg
+                class="h-4 w-4 shrink-0 text-muted-foreground"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true">
                 <path
                     fill-rule="evenodd"
                     d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -101,7 +101,7 @@
         {:else if repositoryList.length === 0}
             <Description>No repositories were returned by this connection.</Description>
         {:else}
-            <div class="h-80 overflow-y-auto rounded-xl border border-neutral-200 p-1 dark:border-neutral-700">
+            <div class="h-80 overflow-y-auto rounded-xl border border-border p-1">
                 {#if filteredRepositoryList.length === 0}
                     <div class="flex h-full items-center justify-center px-3">
                         <Description class="text-center">No matching repositories.</Description>
@@ -116,14 +116,14 @@
                                     disabled={locked}
                                     class="w-full rounded-lg px-3 py-2 text-left text-sm transition-colors {locked
                                         ? 'cursor-not-allowed opacity-60'
-                                        : 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700'} {value ===
-                                    item.id.toString()
-                                        ? 'bg-primary/10 text-neutral-900 dark:text-neutral-100'
-                                        : 'text-neutral-800 dark:text-neutral-200'}"
+                                        : 'cursor-pointer hover:bg-accent'} {value === item.id.toString()
+                                        ? 'bg-primary/10 text-foreground'
+                                        : 'text-foreground'}"
                                     onclick={() => selectItem(item)}>
                                     <span class="block truncate">{item.path}</span>
                                     {#if item.isConnected}
-                                        <span class="mt-0.5 block text-xs text-neutral-500">Already connected</span>
+                                        <span class="mt-0.5 block text-xs text-muted-foreground"
+                                            >Already connected</span>
                                     {/if}
                                 </button>
                             </li>

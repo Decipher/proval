@@ -13,13 +13,13 @@
 <div>
     {#if title}
         <div class="mb-3 pl-1">
-            <h3 class="text-base font-medium text-neutral-800 dark:text-white">{title}</h3>
+            <h3 class="text-base font-medium text-foreground">{title}</h3>
         </div>
     {/if}
     <div
         class="rounded-lg {spaceY ? 'space-y-6' : ''} {border
             ? 'border'
-            : 'border-none'} border-neutral-200 bg-white px-6 py-5 dark:border-neutral-700 dark:bg-neutral-800">
+            : 'border-none'} border-border bg-card px-6 py-5 text-card-foreground">
         {@render children()}
     </div>
 </div>
