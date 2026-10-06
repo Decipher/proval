@@ -167,6 +167,14 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             userPrompt,
         );
 
+        if (!isFollowUpReview && !writingResult.isProblemExisting) {
+            try {
+                await provider.addEmoji(emojiTarget, "👍");
+            } catch (error) {
+                logAgentError(activityId, "add thumbs up failed", error, label);
+            }
+        }
+
         const usage = {
             inputToken:
                 planResult.inputToken +

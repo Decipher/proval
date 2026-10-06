@@ -42,7 +42,7 @@ export async function runReviewWritingAgent(
     priorBotSummary: string | null = null,
     usePushScope = false,
     userPrompt: string | null = null,
-): Promise<ActivityTokenUsage> {
+): Promise<ActivityTokenUsage & { isProblemExisting: boolean }> {
     const system = [
         WRITING_WORKFLOW,
         isFollowUpReview ? FOLLOW_UP_REVIEW_RULE : null,
@@ -112,7 +112,11 @@ export async function runReviewWritingAgent(
         onUsage: (stepUsage) => activityService.addTokenUsage(activityId, stepUsage),
     });
 
-    return result.usage;
+    const { toolCallCount } = result;
+    const isProblemExisting =
+        (toolCallCount.create_single_line_comment ?? 0) + (toolCallCount.create_multi_line_comment ?? 0) > 0;
+
+    return { ...result.usage, isProblemExisting };
 }
 
 export function truncatePriorSummary(body: string): string {
