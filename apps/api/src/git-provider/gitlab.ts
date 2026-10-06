@@ -872,7 +872,14 @@ export class GitLabProvider implements GitProvider {
                     }
                 }
             }
-            throw new Error(`GitLab request failed: ${detail}`);
+            const error = new Error(`GitLab request failed: ${detail}`);
+            (error as Error & { status: number }).status = response.status;
+            throw error;
+        }
+
+        const contentLength = response.headers.get("content-length");
+        if (response.status === 204 || contentLength === "0") {
+            return {} as T;
         }
 
         return (await response.json()) as T;
