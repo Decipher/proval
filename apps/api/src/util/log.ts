@@ -94,7 +94,10 @@ function logToolLine(label: string, heading: string, body: string): void {
 
 export function logAgentTool(
     activityId: number,
-    entry: Omit<ToolCallLogEntry | ToolResultLogEntry | ToolErrorLogEntry, "timestamp" | "level">,
+    entry:
+        | Omit<ToolCallLogEntry, "timestamp" | "level">
+        | Omit<ToolResultLogEntry, "timestamp" | "level">
+        | Omit<ToolErrorLogEntry, "timestamp" | "level">,
     error?: unknown,
 ): void {
     if (entry.type === "tool-error") {
