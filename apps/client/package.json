@@ -15,7 +15,8 @@
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "lint": "prettier --check . && eslint .",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "test": "bun test"
     },
     "dependencies": {
         "@proval/brand": "workspace:*",
