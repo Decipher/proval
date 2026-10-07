@@ -348,7 +348,7 @@
                                                     class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
                                                     <span class="block">
                                                         {transformToolName(entry.toolName)}<span
-                                                            class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                                                            class="pointer-events-none ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity select-none group-hover:opacity-100 group-focus-visible:opacity-100"
                                                             >{formatLogTime(entry.timestamp)}</span>
                                                     </span>
                                                     <!-- eslint-disable svelte/no-at-html-tags -- Highlight.js escapes the argument text before adding markup -->
@@ -389,7 +389,7 @@
                                                     <span class="block font-semibold">Error · {entry.toolName}</span>
                                                 {/if}
                                                 <span class="whitespace-pre-wrap">{entry.message}</span><span
-                                                    class="ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                                    class="pointer-events-none ml-2 inline-block font-normal text-muted-foreground opacity-0 transition-opacity select-none group-hover:opacity-100"
                                                     >{formatLogTime(entry.timestamp)}</span>
                                             </span>
                                         </div>
