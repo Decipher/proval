@@ -99,6 +99,7 @@
 }
 
 @theme inline {
+    --font-code: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
@@ -178,6 +179,54 @@
     main {
         min-height: calc(100vh - 54px);
     }
+}
+
+@font-face {
+    font-family: "Google Sans Code";
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url(/font/GoogleSansCode-Light.woff2) format("woff2");
+}
+
+@font-face {
+    font-family: "Google Sans Code";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(/font/GoogleSansCode-Regular.woff2) format("woff2");
+}
+
+@font-face {
+    font-family: "Google Sans Code";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url(/font/GoogleSansCode-Medium.woff2) format("woff2");
+}
+
+@font-face {
+    font-family: "Google Sans Code";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url(/font/GoogleSansCode-SemiBold.woff2) format("woff2");
+}
+
+@font-face {
+    font-family: "Google Sans Code";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url(/font/GoogleSansCode-Bold.woff2) format("woff2");
+}
+
+@font-face {
+    font-family: "Google Sans Code";
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: url(/font/GoogleSansCode-ExtraBold.woff2) format("woff2");
 }
 
 @font-face {

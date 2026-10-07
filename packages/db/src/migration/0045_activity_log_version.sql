@@ -1,0 +1,1 @@
+ALTER TABLE `activity` ADD `log_version` text;

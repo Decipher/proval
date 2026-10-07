@@ -15,11 +15,13 @@
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "lint": "prettier --check . && eslint .",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "test": "bun test"
     },
     "dependencies": {
         "@proval/brand": "workspace:*",
         "@proval/types": "workspace:*",
+        "highlight.js": "^11.12.0",
         "phosphor-svelte": "^3.1.0",
         "simple-icons": "^16.12.0"
     },

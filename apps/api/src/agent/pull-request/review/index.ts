@@ -42,7 +42,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
         isFollowUpReview = false,
         previousHeadSha = null,
     } = params;
-    const label = `[PR #${prIid}] Review`;
+    const label = `[PR #${prIid}] Setup`;
     const emojiTarget = { type: "pull_request" as const, prIid };
     try {
         try {

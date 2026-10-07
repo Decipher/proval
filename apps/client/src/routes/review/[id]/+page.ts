@@ -10,7 +10,9 @@ export const load: PageLoad = async ({ params }) => {
     ]);
 
     const review: ActivityResponse = await reviewResponse.json();
-    const log: ActivityLogResponse = logResponse.ok ? await logResponse.json() : { status: review.status, logs: [] };
+    const log: ActivityLogResponse = logResponse.ok
+        ? await logResponse.json()
+        : { status: review.status, logVersion: "1", logs: [] };
 
     let provider: ProviderOption | null = null;
     if (review.repositoryId != null) {
