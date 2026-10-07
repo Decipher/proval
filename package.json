@@ -8,7 +8,7 @@
         "build": "bun run --parallel --filter '*' build",
         "build:docker": "docker build -t proval:ci .",
         "typecheck": "bun run --parallel --filter '*' --filter '!@proval/config' typecheck",
-        "test": "bun run --filter api test",
+        "test": "bun run --filter api test && bun run --filter client test",
         "lint": "bun run --parallel --filter '*' --filter '!@proval/config' lint",
         "format": "bun run --parallel --filter '*' --filter '!@proval/config' format",
         "tunnel": "cloudflared tunnel run proval-dev",
