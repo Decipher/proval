@@ -22,7 +22,7 @@ function isPublicAuthPath(
     isAuthEnabled: boolean,
     isRegistrationEnabled: boolean,
 ): boolean {
-    if (path === "/health" && method === "GET") {
+    if (path === "/health" && (method === "GET" || method === "HEAD")) {
         return true;
     }
     if (path === "/auth/me" && method === "GET") {
