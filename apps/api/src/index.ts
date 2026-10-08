@@ -22,12 +22,19 @@ try {
 }
 
 if (process.env.NODE_ENV === "production") {
+    // SQLite treats PRAGMA foreign_keys as a no op inside a transaction and the
+    // migrator wraps every migration in one. A table rebuild migration drop a
+    // table that another table reference with ON DELETE restrict, so the drop
+    // fail unless enforcement is turned off out here first.
+    db.$client.run("PRAGMA foreign_keys = OFF");
     try {
         migrate(db, { migrationsFolder: "./migration" });
         log(pc.bgGreen(pc.bold(" Database migrated successfully ")));
     } catch (error) {
         logError("Error migrating database", error);
         process.exit(1);
+    } finally {
+        db.$client.run("PRAGMA foreign_keys = ON");
     }
 
     apiApp.use("/*", serveStatic({ root: "./public" }));
