@@ -78,6 +78,7 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
             await writeFile(join(dir, "sample.txt"), "previous\n");
             await git(dir, ["commit", "-am", "previous"]);
             const previousSha = await git(dir, ["rev-parse", "HEAD"]);
+            await git(dir, ["update-ref", "refs/heads/previous", previousSha]);
             await writeFile(join(dir, "sample.txt"), "head\n");
             await git(dir, ["commit", "-am", "head"]);
             const headSha = await git(dir, ["rev-parse", "HEAD"]);
