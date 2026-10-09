@@ -100,7 +100,7 @@ export class Workspace {
         this.authHeader = null;
     }
 
-    public async fetch(ref: string, options: { depth?: number } = {}): Promise<void> {
+    public async fetch(ref: string, options: { depth?: number } = {}): Promise<string> {
         if (!this.rootDir || !this.authHeader) {
             throw new Error("Workspace is not initialized. Call init() first.");
         }
@@ -111,7 +111,8 @@ export class Workspace {
         }
 
         const depth = options.depth ?? 1;
-        const spec = SHA_PATTERN.test(want) ? want : `${want}:${want}`;
+        const target = want.replace(/^refs\/heads\//, "refs/remotes/origin/");
+        const spec = SHA_PATTERN.test(want) ? want : `${want}:${target}`;
         await runCommand(
             ["git", "-c", `http.extraHeader=${this.authHeader}`, "fetch", `--depth=${depth}`, "origin", spec],
             {
@@ -119,6 +120,9 @@ export class Workspace {
                 env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
             },
         );
+
+        // Returns the fetched remote ref name (refs/remotes/origin/...)
+        return target;
     }
 
     public async checkout(sha: string): Promise<void> {
@@ -180,10 +184,8 @@ export class Workspace {
             await this.init();
         }
         const branchRef = this.provider.getBranchFetchRef(branch);
-        if (this.authHeader) {
-            await this.fetch(branchRef);
-        }
-        await this.checkout(branchRef);
+        const target = this.authHeader ? await this.fetch(branchRef) : branchRef;
+        await this.checkout(target);
     }
 
     public setVersion(version: WorkspaceVersion): void {
