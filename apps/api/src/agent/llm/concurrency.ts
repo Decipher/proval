@@ -1,3 +1,10 @@
+import { debug } from "../../util/log.js";
+
+function formatMax(max: number | null): string {
+    if (max == null || !Number.isFinite(max)) return "unlimited";
+    return String(max);
+}
+
 export class Limiter {
     private active: number = 0;
     private queue: Array<() => void> = [];
@@ -25,6 +32,7 @@ export class Limiter {
     private acquire(): Promise<void> {
         if (this.active < this.max) {
             this.active++;
+            debug(`granted active ${this.active} max ${formatMax(this.max)}`, "Limiter");
             return Promise.resolve();
         }
 
@@ -33,6 +41,10 @@ export class Limiter {
                 this.active++;
                 resolve();
             });
+            debug(
+                `queued active ${this.active} max ${formatMax(this.max)} waiting ${this.queue.length}`,
+                "Limiter",
+            );
         });
     }
 
@@ -44,6 +56,7 @@ export class Limiter {
 
     private drain(): void {
         while (this.active < this.max && this.queue.length > 0) {
+            debug(`resume waiting ${this.queue.length}`, "Limiter");
             const next = this.queue.shift();
             if (next) {
                 next();
@@ -63,9 +76,11 @@ export function loadLimiter(providerId: number | undefined, concurrency: number 
     const existing = limiterByProviderId.get(providerId);
     if (existing) {
         existing.setMax(max);
+        debug(`provider ${providerId} reused max ${formatMax(max)}`, "Limiter");
         return existing;
     }
     const created = new Limiter(max);
     limiterByProviderId.set(providerId, created);
+    debug(`provider ${providerId} created max ${formatMax(max)}`, "Limiter");
     return created;
 }
