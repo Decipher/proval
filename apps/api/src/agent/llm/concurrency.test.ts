@@ -79,7 +79,7 @@ describe("Limiter", () => {
     });
 });
 
-describe("limiterFor", () => {
+describe("loadLimit", () => {
     it("reuses one limiter for a provider id and keeps the maximum", async () => {
         const first = loadLimiter(7, 1);
         const second = loadLimiter(7, 1);
