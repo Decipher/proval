@@ -2,7 +2,7 @@ import type { ReasoningEffort } from "@proval/types";
 import type { LlmSender } from "./loop.js";
 import { createOpenAiSender } from "./openai.js";
 import { createAnthropicSender } from "./anthropic.js";
-import { llmCallLimiter } from "./concurrency.js";
+import { loadLimiter, type Limiter } from "./concurrency.js";
 
 export interface SenderConfig {
     provider: string;
@@ -11,9 +11,11 @@ export interface SenderConfig {
     model: string;
     timeoutSecond: number;
     reasoningEffort?: ReasoningEffort;
+    modelProviderId?: number;
+    concurrency?: number | null;
 }
 
-export type SenderSDKConfig = Omit<SenderConfig, "provider"> & {
+export type SenderSDKConfig = Omit<SenderConfig, "provider" | "modelProviderId" | "concurrency"> & {
     fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 };
 
@@ -29,26 +31,22 @@ function createLLMFetch() {
     };
 }
 
-/**
- * Bounds every model call in the process, not just one agent kind.
- * A plan agent, a review sub agent, a writing agent and a reply agent all send
- * through a sender from here, so wrapping it here is the only place that holds
- * when several review run at once.
- */
-function withConcurrencyLimit(sender: LlmSender): LlmSender {
+function withConcurrencyLimit(sender: LlmSender, limiter: Limiter): LlmSender {
     return {
-        send: (messages, tools) => llmCallLimiter.run(() => sender.send(messages, tools)),
+        send: (messages, tools) => limiter.run(() => sender.send(messages, tools)),
         getModel: () => sender.getModel(),
     };
 }
 
 export function createSender(config: SenderConfig): LlmSender {
+    const { modelProviderId, concurrency, ...sdkConfig } = config;
+    const limiter = loadLimiter(modelProviderId, concurrency);
     const fetch = createLLMFetch();
     switch (config.provider) {
         case "anthropic":
-            return withConcurrencyLimit(createAnthropicSender({ ...config, fetch }));
+            return withConcurrencyLimit(createAnthropicSender({ ...sdkConfig, fetch }), limiter);
         case "openai":
         default:
-            return withConcurrencyLimit(createOpenAiSender({ ...config, fetch }));
+            return withConcurrencyLimit(createOpenAiSender({ ...sdkConfig, fetch }), limiter);
     }
 }

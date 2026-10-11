@@ -196,6 +196,8 @@ async function handlePullRequestWebhook(
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
         reasoningEffort: repository.reasoningEffort,
+        modelProviderId: modelProvider.id,
+        concurrency: modelProvider.concurrency,
     });
 
     const isInlineReview = repository.prInlineReview;
@@ -278,6 +280,8 @@ async function handleIssueWebhook(
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
         reasoningEffort: repository.reasoningEffort,
+        modelProviderId: modelProvider.id,
+        concurrency: modelProvider.concurrency,
     });
 
     const workspace = new Workspace(gitHubProvider);
@@ -368,6 +372,8 @@ async function handleIssueCommentWebhook(
             model: repository.modelName,
             timeoutSecond: modelProvider.timeoutSecond,
             reasoningEffort: repository.reasoningEffort,
+            modelProviderId: modelProvider.id,
+            concurrency: modelProvider.concurrency,
         });
 
         const workspace = new Workspace(gitHubProvider);
@@ -424,6 +430,8 @@ async function handleIssueCommentWebhook(
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
         reasoningEffort: repository.reasoningEffort,
+        modelProviderId: modelProvider.id,
+        concurrency: modelProvider.concurrency,
     });
 
     const workspace = new Workspace(gitHubProvider);
@@ -510,6 +518,8 @@ async function handlePullRequestReviewCommentWebhook(
         model: repository.modelName,
         timeoutSecond: modelProvider.timeoutSecond,
         reasoningEffort: repository.reasoningEffort,
+        modelProviderId: modelProvider.id,
+        concurrency: modelProvider.concurrency,
     });
 
     const workspace = new Workspace(gitHubProvider);

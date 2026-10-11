@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Limiter } from "./concurrency.js";
+import { Limiter, loadLimiter } from "./concurrency.js";
 
 function createDeferred() {
     let resolve: () => void = () => {};
@@ -74,6 +74,60 @@ describe("Limiter", () => {
 
         await Bun.sleep(0);
         expect(peak).toBe(5);
+        gate.resolve();
+        await Promise.all(runList);
+    });
+});
+
+describe("limiterFor", () => {
+    it("reuses one limiter for a provider id and keeps the maximum", async () => {
+        const first = loadLimiter(7, 1);
+        const second = loadLimiter(7, 1);
+        expect(first).toBe(second);
+
+        let active = 0;
+        let peak = 0;
+        const gate = createDeferred();
+        const runList = [first, second].map((limiter) =>
+            limiter.run(async () => {
+                active++;
+                peak = Math.max(peak, active);
+                await gate.promise;
+                active--;
+            }),
+        );
+
+        await Bun.sleep(0);
+        expect(peak).toBe(1);
+        gate.resolve();
+        await Promise.all(runList);
+    });
+
+    it("creates a separate limiter when the provider id is missing", () => {
+        const first = loadLimiter(undefined, 1);
+        const second = loadLimiter(undefined, 1);
+        expect(first).not.toBe(second);
+    });
+
+    it("raises the shared maximum when the same provider id is requested again", async () => {
+        const first = loadLimiter(7, 1);
+        const second = loadLimiter(7, 2);
+        expect(first).toBe(second);
+
+        let active = 0;
+        let peak = 0;
+        const gate = createDeferred();
+        const runList = [0, 1].map(() =>
+            second.run(async () => {
+                active++;
+                peak = Math.max(peak, active);
+                await gate.promise;
+                active--;
+            }),
+        );
+
+        await Bun.sleep(0);
+        expect(peak).toBe(2);
         gate.resolve();
         await Promise.all(runList);
     });

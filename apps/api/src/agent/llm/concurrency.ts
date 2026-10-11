@@ -52,24 +52,20 @@ export class Limiter {
     }
 }
 
-const DEFAULT_LLM_CONCURRENCY = 4;
+// A removed provider id keeps its limiter until the process restarts.
+const limiterByProviderId = new Map<number, Limiter>();
 
-function readLlmConcurrency(): number {
-    const raw = process.env.PROVAL_LLM_CONCURRENCY;
-    if (!raw) {
-        return DEFAULT_LLM_CONCURRENCY;
+export function loadLimiter(providerId: number | undefined, concurrency: number | null | undefined): Limiter {
+    const max = concurrency ?? null;
+    if (providerId == null) {
+        return new Limiter(max);
     }
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed < 1) {
-        return DEFAULT_LLM_CONCURRENCY;
+    const existing = limiterByProviderId.get(providerId);
+    if (existing) {
+        existing.setMax(max);
+        return existing;
     }
-    return parsed;
+    const created = new Limiter(max);
+    limiterByProviderId.set(providerId, created);
+    return created;
 }
-
-/**
- * Bounds how many model call may be in flight across the whole process.
- * Shared by every agent and every review, so a burst of concurrent review
- * cannot exceed the provider concurrency allowance and trigger rate limit
- * failure.
- */
-export const llmCallLimiter = new Limiter(readLlmConcurrency());
