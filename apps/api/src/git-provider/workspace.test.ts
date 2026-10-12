@@ -458,6 +458,18 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
             });
         });
 
+        it("loads only root guidance outside a pull request", async () => {
+            await withGuidance({ "AGENTS.md": "root rule", "src/agents.md": "nested rule" }, async (workspace) => {
+                expect(workspace.isPullRequest()).toBe(false);
+                const { buildAgentInstructionPrompt } = await import("../agent/pull-request/prompt/agents-md.js");
+                const prompt = await buildAgentInstructionPrompt(workspace, 0);
+                expect(prompt).toContain("root rule");
+                expect(prompt).toContain("checked out branch");
+                expect(prompt).not.toContain("nested rule");
+                expect(prompt).not.toContain("PR head");
+            });
+        });
+
         it("caps file count and the complete formatted context", async () => {
             const fileMap: Record<string, string> = {};
             for (let index = 0; index < 33; index++)
