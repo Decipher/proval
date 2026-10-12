@@ -34,10 +34,10 @@ export async function runReviewSubAgent(
 ): Promise<ActivityTokenUsage & { handoff: ReviewHandoff }> {
     const system = [
         REVIEW_SUB_AGENT_BODY,
-        agentInstructionPrompt,
         REVIEW_SUB_AGENT_HANDOFF_FIELDS,
         usePushScope ? FOLLOW_UP_PUSH_SUB_HINT : null,
         REVIEW_CHECKLIST,
+        agentInstructionPrompt,
         generateUserPrompt(PR_REVIEW_SUB_USER_PROMPT_HEADER, userPrompt),
     ]
         .filter(Boolean)

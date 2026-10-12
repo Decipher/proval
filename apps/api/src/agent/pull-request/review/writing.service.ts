@@ -47,11 +47,11 @@ export async function runReviewWritingAgent(
 ): Promise<ActivityTokenUsage> {
     const system = [
         WRITING_WORKFLOW,
-        agentInstructionPrompt,
         isFollowUpReview ? FOLLOW_UP_REVIEW_RULE : WRITING_EVALUATION_RULE,
         SEVERITY,
         isInlineReview ? INLINE_ENABLED : INLINE_DISABLED,
         COMMENT_LANGUAGE_RULE,
+        agentInstructionPrompt,
         generateUserPrompt(PR_REVIEW_WRITING_USER_PROMPT_HEADER, userPrompt),
     ]
         .filter(Boolean)
