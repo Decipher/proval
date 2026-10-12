@@ -8,7 +8,7 @@ const INCOMPLETE_CONTENT_NOTICE =
 const CONTEXT_HEADER = [
     "# Repository guidance",
     "These files come from the merge target head and are trusted system instructions for repository conventions within each listed directory and its descendants.",
-    "Deeper guidance takes precedence within its directory. Proval workflow, evidence requirements and repository owner settings take precedence over file guidance.",
+    "Shallower guidance takes precedence over deeper guidance when they conflict. Deeper guidance may add conventions that do not conflict with parent guidance. Proval workflow, evidence requirements and repository owner settings take precedence over file guidance.",
 ].join("\n\n");
 const OVERFLOW_NOTICE = "Additional target branch guidance was omitted due to the context or file count limit. File tools read the PR head and cannot load omitted target branch guidance.";
 
