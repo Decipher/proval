@@ -1,4 +1,3 @@
-import type { GitChangedFile } from "../../../git-provider/types.js";
 import type { Workspace, WorkspaceAgentInstruction } from "../../../git-provider/workspace.js";
 import { logAgent } from "../../../util/log.js";
 
@@ -12,11 +11,8 @@ const CONTEXT_HEADER = [
 ].join("\n\n");
 const OVERFLOW_NOTICE = "Additional target branch guidance was omitted due to the context or file count limit. File tools read the PR head and cannot load omitted target branch guidance.";
 
-export async function buildAgentInstructionPrompt(
-    workspace: Workspace,
-    changedFileList: GitChangedFile[],
-    activityId: number,
-): Promise<string> {
+export async function buildAgentInstructionPrompt(workspace: Workspace, activityId: number): Promise<string> {
+    const changedFileList = workspace.isPullRequest() ? await workspace.changedFiles() : [];
     const result = await workspace.loadAgentInstructionList(changedFileList, activityId);
     const selectedFileList: {
         file: WorkspaceAgentInstruction;

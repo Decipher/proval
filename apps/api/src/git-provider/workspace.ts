@@ -533,6 +533,10 @@ export class Workspace {
         return { fromSha, headSha };
     }
 
+    public isPullRequest(): boolean {
+        return this.startSha !== null;
+    }
+
     public async changedFiles(against: WorkspaceDiffAgainst = "start"): Promise<GitChangedFile[]> {
         this.isWorkspaceLoaded();
         const { fromSha, headSha } = this.resolveDiffSha(against);

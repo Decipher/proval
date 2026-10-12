@@ -462,7 +462,7 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
             const fileMap: Record<string, string> = {};
             for (let index = 0; index < 33; index++)
                 fileMap[`dir${String(index).padStart(2, "0")}/AGENTS.md`] = "x".repeat(100_000);
-            await withGuidance(fileMap, async (workspace) => {
+            await withGuidance(fileMap, async (workspace, dir) => {
                 const changedFileList = Object.keys(fileMap).map((path) => changed(path));
                 const { fileList, hasOverflow } = await workspace.loadAgentInstructionList(changedFileList, 0);
                 expect(fileList).toHaveLength(32);
@@ -472,8 +472,14 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
                     fileList.slice(0, 4).every((file) => file.state === "truncated" && file.body.length === 8000),
                 ).toBe(true);
                 expect(fileList.slice(4).every((file) => file.state === "omitted" && file.body === "")).toBe(true);
+                const headSha = await git(dir, ["rev-parse", "HEAD"]);
+                workspace.setVersion({
+                    headSha,
+                    startSha: await git(dir, ["rev-parse", "HEAD^"]),
+                    baseSha: headSha,
+                });
                 const { buildAgentInstructionPrompt } = await import("../agent/pull-request/prompt/agents-md.js");
-                const prompt = await buildAgentInstructionPrompt(workspace, changedFileList, 0);
+                const prompt = await buildAgentInstructionPrompt(workspace, 0);
                 expect(prompt.length).toBeLessThanOrEqual(32_000);
                 expect(prompt).toContain("Additional target branch guidance was omitted");
                 expect(prompt).not.toContain("UNTRUSTED_INPUT_START");

@@ -97,11 +97,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
 
         logAgent(activityId, "building pull request prompt", label);
         let prompt = await generatePullRequestPrompt(workspace, prIid, version, previousShaForPrompt);
-        const agentInstructionPrompt = await buildAgentInstructionPrompt(
-            workspace,
-            await workspace.changedFiles(),
-            activityId,
-        );
+        const agentInstructionPrompt = await buildAgentInstructionPrompt(workspace, activityId);
 
         let priorBotSummary: string | null = null;
         let threadContext: string | null = null;
