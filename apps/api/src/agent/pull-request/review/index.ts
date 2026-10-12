@@ -1,6 +1,7 @@
 import type { PullRequestReview } from "../index.js";
 import { postDevDebugPullRequestComment } from "../../shared/util/debug.js";
 import { generatePullRequestPrompt } from "../prompt/context.js";
+import { buildAgentInstructionPrompt } from "../prompt/agents-md.js";
 import { runReviewPlanAgent } from "./plan.service.js";
 import { runReviewSubAgent } from "./sub.service.js";
 import type { ReviewHandoff } from "./handoff.schema.js";
@@ -96,6 +97,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
 
         logAgent(activityId, "building pull request prompt", label);
         let prompt = await generatePullRequestPrompt(workspace, prIid, version, previousShaForPrompt);
+        const agentInstructionPrompt = await buildAgentInstructionPrompt(workspace, activityId);
 
         let priorBotSummary: string | null = null;
         let threadContext: string | null = null;
@@ -123,6 +125,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             isFollowUpReview,
             usePushScope,
             userPrompt,
+            agentInstructionPrompt,
         );
         const total = planResult.reviewUnitList.length;
         const reviewHandoffList: ReviewHandoff[] = [];
@@ -147,6 +150,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
                     activityId,
                     usePushScope,
                     userPrompt,
+                    agentInstructionPrompt,
                 ),
             ),
         );
@@ -178,6 +182,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             priorBotSummary,
             usePushScope,
             userPrompt,
+            agentInstructionPrompt,
         );
 
         const usage = {
