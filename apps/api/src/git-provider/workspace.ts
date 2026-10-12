@@ -1,7 +1,6 @@
-import { createReadStream } from "node:fs";
-import { lstat, mkdir, readdir, readFile, realpath, rm } from "node:fs/promises";
-import { join, resolve, sep } from "node:path";
-import { log, logError } from "../util/log.js";
+import { mkdir, readdir, readFile, rm } from "node:fs/promises";
+import { join, posix, resolve, sep } from "node:path";
+import { log, logAgent, logAgentError, logError } from "../util/log.js";
 import type { GitChangedFile, GitDiff, GitProvider, GitTree } from "./types.js";
 
 export type WorkspaceGrepMatch = {
@@ -17,14 +16,19 @@ export type WorkspaceVersion = {
     previousSha?: string | null;
 };
 
-type WorkspaceReadOption = {
-    regularFileOnly?: boolean;
-    maxCharacterCount?: number;
+export type WorkspaceAgentInstruction = {
+    path: string;
+    directory: string;
+    body: string;
+    state: "loaded" | "truncated" | "empty" | "omitted" | "unavailable";
 };
 
 export type WorkspaceDiffAgainst = "start" | "base";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+const AGENT_INSTRUCTION_FILE_CHARACTER_LIMIT = 8_000;
+const AGENT_INSTRUCTION_TOTAL_CHARACTER_LIMIT = 32_000;
+const AGENT_INSTRUCTION_FILE_COUNT_LIMIT = 32;
 
 export function getWorkspaceRoot(): string {
     return resolve(process.env.NODE_ENV === "production" ? "/data/workspaces" : "./data/workspaces");
@@ -70,6 +74,7 @@ export class Workspace {
     private startSha: string | null = null;
     private baseSha: string | null = null;
     private previousSha: string | null = null;
+    private targetHeadSha: string | null = null;
 
     constructor(private readonly provider: GitProvider) {}
 
@@ -157,9 +162,14 @@ export class Workspace {
             await this.init();
         }
 
+        let targetHeadSha = input.baseSha;
         if (this.authHeader) {
             await this.fetch(this.provider.getPullRequestHeadFetchRef(input.prIid));
-            await this.fetch(this.provider.getBranchFetchRef(input.targetBranch));
+            const targetRef = await this.fetch(this.provider.getBranchFetchRef(input.targetBranch));
+            const { stdout } = await runCommand(["git", "rev-parse", `${targetRef}^{commit}`], {
+                cwd: this.rootDir!,
+            });
+            targetHeadSha = stdout.trim();
             if (input.startSha) {
                 try {
                     await this.fetch(input.startSha);
@@ -182,6 +192,7 @@ export class Workspace {
             baseSha: input.baseSha,
             previousSha: input.previousSha ?? null,
         });
+        this.targetHeadSha = targetHeadSha;
         await this.checkout(input.headSha);
     }
 
@@ -192,12 +203,14 @@ export class Workspace {
         const branchRef = this.provider.getBranchFetchRef(branch);
         const target = this.authHeader ? await this.fetch(branchRef) : branchRef;
         await this.checkout(target);
+        this.targetHeadSha = this.headSha;
     }
 
     public setVersion(version: WorkspaceVersion): void {
         this.headSha = version.headSha.trim();
         this.startSha = version.startSha?.trim() || null;
         this.baseSha = version.baseSha?.trim() || null;
+        this.targetHeadSha = this.baseSha;
         this.previousSha = version.previousSha?.trim() || null;
     }
 
@@ -212,6 +225,7 @@ export class Workspace {
         this.startSha = null;
         this.baseSha = null;
         this.previousSha = null;
+        this.targetHeadSha = null;
         if (dir && shouldRemove) {
             await rm(dir, { recursive: true, force: true });
         }
@@ -307,47 +321,137 @@ export class Workspace {
             }));
     }
 
-    public async read(
-        relPath: string,
-        option: WorkspaceReadOption = {},
-    ): Promise<string> {
+    public async read(relPath: string): Promise<string> {
         const abs = this.safePath(relPath);
-        const { maxCharacterCount } = option;
-        if (maxCharacterCount !== undefined && (!Number.isSafeInteger(maxCharacterCount) || maxCharacterCount < 0)) {
-            throw new RangeError("Character limit must be a nonnegative safe integer");
-        }
-
         try {
-            if (option.regularFileOnly) {
-                const [stat, root, target] = await Promise.all([
-                    lstat(abs),
-                    realpath(this.safePath("")),
-                    realpath(abs),
-                ]);
-                if (!stat.isFile() || !target.startsWith(root + sep)) {
-                    throw new Error("Not a regular workspace file");
-                }
-            }
-
-            if (maxCharacterCount !== undefined) {
-                if (maxCharacterCount === 0) return "";
-                
-                const stream = createReadStream(abs, {
-                    encoding: "utf8",
-                    highWaterMark: Math.min(4096, maxCharacterCount),
-                });
-                let content = "";
-                for await (const chunk of stream) {
-                    content += String(chunk).slice(0, maxCharacterCount - content.length);
-                    if (content.length === maxCharacterCount) break;
-                }
-                return content;
-            }
-
             return await readFile(abs, "utf-8");
         } catch {
             throw new Error(`File not found: ${relPath}`);
         }
+    }
+
+    public async loadAgentInstructionList(
+        changedFileList: GitChangedFile[],
+        activityId: number,
+    ): Promise<{ fileList: WorkspaceAgentInstruction[]; hasOverflow: boolean }> {
+        this.isWorkspaceLoaded();
+        if (!this.targetHeadSha) throw new Error("Workspace target head is not loaded.");
+
+        const directorySet = new Set([""]);
+        for (const file of changedFileList) {
+            for (const path of [file.oldPath, file.newPath]) {
+                if (!path) continue;
+                let directory = posix.dirname(path);
+                while (directory !== "." && directory !== "/") {
+                    directorySet.add(directory);
+                    directory = posix.dirname(directory);
+                }
+            }
+        }
+        
+        const directoryList = [...directorySet].sort((a, b) => {
+            const depth = (path: string) => (path ? path.split("/").length : 0);
+            return depth(a) - depth(b) || (a < b ? -1 : a > b ? 1 : 0);
+        });
+        const fileList: WorkspaceAgentInstruction[] = [];
+        const label = "Repository guidance";
+        let hasOverflow = false;
+        let remainingCharacterCount = AGENT_INSTRUCTION_TOTAL_CHARACTER_LIMIT;
+        const entryMap = new Map<string, { path: string; mode: string; oid: string }>();
+        try {
+            const { stdout } = await runCommand(["git", "ls-tree", "-r", "-t", "-z", this.targetHeadSha], {
+                cwd: this.rootDir!,
+            });
+            for (const record of stdout.split("\0")) {
+                const tabIndex = record.indexOf("\t");
+                if (tabIndex < 0) continue;
+                const path = record.slice(tabIndex + 1);
+                const name = posix.basename(path);
+                if (name !== "AGENTS.md" && name !== "agents.md") continue;
+                const directory = posix.dirname(path) === "." ? "" : posix.dirname(path);
+                if (!directorySet.has(directory)) continue;
+                const [mode, , oid] = record.slice(0, tabIndex).split(" ");
+                if (!mode || !oid) continue;
+                if (name === "AGENTS.md" || !entryMap.has(directory)) {
+                    entryMap.set(directory, { path, mode, oid });
+                }
+            }
+        } catch {
+            logAgentError(activityId, "Could not search guidance at the target head", undefined, label);
+            return { fileList, hasOverflow };
+        }
+
+        for (const directory of directoryList) {
+            const entry = entryMap.get(directory);
+            if (!entry) continue;
+            const { path, mode, oid } = entry;
+            if (fileList.length >= AGENT_INSTRUCTION_FILE_COUNT_LIMIT) {
+                hasOverflow = true;
+                logAgent(
+                    activityId,
+                    `Guidance ${JSON.stringify(path)} was omitted from the initial context due to the file count limit`,
+                    label,
+                );
+                continue;
+            }
+            const file: WorkspaceAgentInstruction = { path, directory, body: "", state: "omitted" };
+            fileList.push(file);
+            if (remainingCharacterCount === 0) continue;
+
+            try {
+                if (mode !== "100644" && mode !== "100755") throw new Error("Not a regular Git file");
+                const characterLimit = Math.min(AGENT_INSTRUCTION_FILE_CHARACTER_LIMIT, remainingCharacterCount);
+                // Read one extra character to detect a truncated prefix
+                const maxCharacterCount = characterLimit + 1;
+                const proc = Bun.spawn(["git", "cat-file", "blob", oid], {
+                    cwd: this.rootDir!,
+                    stdout: "pipe",
+                    stderr: "ignore",
+                });
+                const reader = proc.stdout.getReader();
+                const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
+                let content = "";
+                try {
+                    while (content.length < maxCharacterCount) {
+                        const { value, done } = await reader.read();
+                        if (done) {
+                            content += decoder.decode().slice(0, maxCharacterCount - content.length);
+                            break;
+                        }
+                        for (
+                            let offset = 0;
+                            offset < value.length && content.length < maxCharacterCount;
+                            offset += 4096
+                        ) {
+                            content += decoder
+                                .decode(value.subarray(offset, offset + 4096), { stream: true })
+                                .slice(0, maxCharacterCount - content.length);
+                        }
+                    }
+                } finally {
+                    if (content.length === maxCharacterCount) proc.kill();
+                    await reader.cancel();
+                    await proc.exited;
+                }
+                if (content.length < maxCharacterCount && proc.exitCode !== 0)
+                    throw new Error("Could not read Git blob");
+                file.body = content.slice(0, characterLimit);
+                if (/[\uD800-\uDBFF]$/.test(file.body)) file.body = file.body.slice(0, -1);
+                if (file.body.length < content.length) {
+                    file.state = "truncated";
+                } else if (!file.body.trim()) {
+                    file.body = "";
+                    file.state = "empty";
+                } else {
+                    file.state = "loaded";
+                }
+                remainingCharacterCount -= file.body.length;
+            } catch {
+                file.state = "unavailable";
+                logAgentError(activityId, `Could not read guidance ${JSON.stringify(path)}`, undefined, label);
+            }
+        }
+        return { fileList, hasOverflow };
     }
 
     public async glob(pattern: string): Promise<string[]> {

@@ -2,7 +2,7 @@ import type { ActivityTokenUsage } from "@proval/types";
 import type { GitProvider } from "../../../git-provider/types";
 import type { Workspace } from "../../../git-provider/workspace.js";
 import { runAgentLoop, type LlmSender } from "../../llm/loop";
-import { INLINE_DISABLED, INLINE_ENABLED, SEVERITY, REPOSITORY_GUIDANCE_RULE } from "../prompt";
+import { INLINE_DISABLED, INLINE_ENABLED, SEVERITY } from "../prompt";
 import { COMMENT_LANGUAGE_RULE } from "../../shared/prompt";
 import { PR_REVIEW_WRITING_USER_PROMPT_HEADER, WRITING_EVALUATION_RULE, WRITING_WORKFLOW } from "./writing.prompt.js";
 import { FOLLOW_UP_REVIEW_RULE } from "./follow-up.prompt.js";
@@ -43,10 +43,11 @@ export async function runReviewWritingAgent(
     priorBotSummary: string | null = null,
     usePushScope = false,
     userPrompt: string | null = null,
+    agentInstructionPrompt = "",
 ): Promise<ActivityTokenUsage> {
     const system = [
         WRITING_WORKFLOW,
-        REPOSITORY_GUIDANCE_RULE,
+        agentInstructionPrompt,
         isFollowUpReview ? FOLLOW_UP_REVIEW_RULE : WRITING_EVALUATION_RULE,
         SEVERITY,
         isInlineReview ? INLINE_ENABLED : INLINE_DISABLED,
