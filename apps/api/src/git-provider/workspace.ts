@@ -26,8 +26,6 @@ export type WorkspaceAgentInstruction = {
 export type WorkspaceDiffAgainst = "start" | "base";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
-const AGENT_INSTRUCTION_FILE_CHARACTER_LIMIT = 8_000;
-const AGENT_INSTRUCTION_TOTAL_CHARACTER_LIMIT = 32_000;
 const AGENT_INSTRUCTION_FILE_COUNT_LIMIT = 32;
 
 export function getWorkspaceRoot(): string {
@@ -356,7 +354,6 @@ export class Workspace {
         const fileList: WorkspaceAgentInstruction[] = [];
         const label = "Repository guidance";
         let hasOverflow = false;
-        let remainingCharacterCount = AGENT_INSTRUCTION_TOTAL_CHARACTER_LIMIT;
         const entryMap = new Map<string, { path: string; mode: string; oid: string }>();
         try {
             const { stdout } = await runCommand(["git", "ls-tree", "-r", "-t", "-z", this.targetHeadSha], {
@@ -394,15 +391,11 @@ export class Workspace {
                 );
                 continue;
             }
-            const file: WorkspaceAgentInstruction = { path, directory, body: "", state: "omitted" };
+            const file: WorkspaceAgentInstruction = { path, directory, body: "", state: "unavailable" };
             fileList.push(file);
-            if (remainingCharacterCount === 0) continue;
 
             try {
                 if (mode !== "100644" && mode !== "100755") throw new Error("Not a regular Git file");
-                const characterLimit = Math.min(AGENT_INSTRUCTION_FILE_CHARACTER_LIMIT, remainingCharacterCount);
-                // Read one extra character to detect a truncated prefix
-                const maxCharacterCount = characterLimit + 1;
                 const proc = Bun.spawn(["git", "cat-file", "blob", oid], {
                     cwd: this.rootDir!,
                     stdout: "pipe",
@@ -412,40 +405,26 @@ export class Workspace {
                 const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
                 let content = "";
                 try {
-                    while (content.length < maxCharacterCount) {
+                    while (true) {
                         const { value, done } = await reader.read();
                         if (done) {
-                            content += decoder.decode().slice(0, maxCharacterCount - content.length);
+                            content += decoder.decode();
                             break;
                         }
-                        for (
-                            let offset = 0;
-                            offset < value.length && content.length < maxCharacterCount;
-                            offset += 4096
-                        ) {
-                            content += decoder
-                                .decode(value.subarray(offset, offset + 4096), { stream: true })
-                                .slice(0, maxCharacterCount - content.length);
-                        }
+                        content += decoder.decode(value, { stream: true });
                     }
                 } finally {
-                    if (content.length === maxCharacterCount) proc.kill();
                     await reader.cancel();
                     await proc.exited;
                 }
-                if (content.length < maxCharacterCount && proc.exitCode !== 0)
-                    throw new Error("Could not read Git blob");
-                file.body = content.slice(0, characterLimit);
-                if (/[\uD800-\uDBFF]$/.test(file.body)) file.body = file.body.slice(0, -1);
-                if (file.body.length < content.length) {
-                    file.state = "truncated";
-                } else if (!file.body.trim()) {
+                if (proc.exitCode !== 0) throw new Error("Could not read Git blob");
+                if (!content.trim()) {
                     file.body = "";
                     file.state = "empty";
                 } else {
+                    file.body = content;
                     file.state = "loaded";
                 }
-                remainingCharacterCount -= file.body.length;
             } catch {
                 file.state = "unavailable";
                 logAgentError(activityId, `Could not read guidance ${JSON.stringify(path)}`, undefined, label);

@@ -2,6 +2,7 @@ import type { Workspace, WorkspaceAgentInstruction } from "../../../git-provider
 import { logAgent } from "../../../util/log.js";
 
 const TOTAL_CHARACTER_LIMIT = 32_000;
+const FILE_CHARACTER_LIMIT = 8_000;
 const PR_INCOMPLETE_CONTENT_NOTICE =
     "Only the included target branch content supplies conventions. File tools read the PR head and cannot complete this guidance.";
 const BRANCH_INCOMPLETE_CONTENT_NOTICE =
@@ -63,7 +64,8 @@ export async function buildAgentInstructionPrompt(workspace: Workspace, activity
     const sectionList: string[] = [];
     for (const { file, section, overheadCharacterCount } of selectedFileList) {
         const { path } = file;
-        let body = file.body.slice(0, remainingCharacterCount);
+        const characterLimit = Math.min(FILE_CHARACTER_LIMIT, Math.max(0, remainingCharacterCount));
+        let body = file.body.slice(0, characterLimit);
         let state = file.state;
         // Keep surrogate pairs intact when the prompt budget further shortens the body
         if (/[\uD800-\uDBFF]$/.test(body)) body = body.slice(0, -1);

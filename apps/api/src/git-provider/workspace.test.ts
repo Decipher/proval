@@ -420,7 +420,7 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
             });
         });
 
-        it("reads bounded Git content without using the general filesystem reader", async () => {
+        it("reads Git content without using the general filesystem reader", async () => {
             const content = "\uFEFF" + "a".repeat(4094) + "中😀".repeat(20_000);
             await withGuidance({ "AGENTS.md": content }, async (workspace) => {
                 const readSpy = spyOn(workspace, "read").mockImplementation(async () => {
@@ -428,8 +428,8 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
                 });
                 try {
                     const { fileList } = await workspace.loadAgentInstructionList([], 0);
-                    expect(fileList[0].body).toBe(content.slice(0, 7999));
-                    expect(fileList[0].state).toBe("truncated");
+                    expect(fileList[0].body).toBe(content);
+                    expect(fileList[0].state).toBe("loaded");
                     expect(readSpy).not.toHaveBeenCalled();
                 } finally {
                     readSpy.mockRestore();
@@ -439,15 +439,15 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
             });
         });
 
-        it("preserves text and detects empty or truncated prefixes", async () => {
+        it("preserves text and treats blank files as empty", async () => {
             await withGuidance({ "AGENTS.md": "" }, async (workspace, dir) => {
                 for (const [content, body, state] of [
                     ["中😀end", "中😀end", "loaded"],
                     ["中".repeat(8000), "中".repeat(8000), "loaded"],
                     ["", "", "empty"],
                     ["   \n", "", "empty"],
-                    [" ".repeat(8001) + "rule", " ".repeat(8000), "truncated"],
-                    ["a".repeat(7999) + "😀rule", "a".repeat(7999), "truncated"],
+                    [" ".repeat(8001) + "rule", " ".repeat(8001) + "rule", "loaded"],
+                    ["a".repeat(7999) + "😀rule", "a".repeat(7999) + "😀rule", "loaded"],
                 ] as const) {
                     await writeFile(join(dir, "AGENTS.md"), content);
                     await commitGuidance(workspace, dir);
@@ -455,6 +455,11 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
                     expect(fileList[0].body).toBe(body);
                     expect(fileList[0].state).toBe(state);
                 }
+                const { buildAgentInstructionPrompt } = await import("../agent/pull-request/prompt/agents-md.js");
+                const prompt = await buildAgentInstructionPrompt(workspace, 0);
+                expect(prompt).toContain("a".repeat(7999));
+                expect(prompt).not.toContain("😀");
+                expect(prompt).toContain("Content truncated");
             });
         });
 
@@ -479,11 +484,7 @@ if (process.env.PROVAL_WORKSPACE_TEST_CHILD !== "1") {
                 const { fileList, hasOverflow } = await workspace.loadAgentInstructionList(changedFileList, 0);
                 expect(fileList).toHaveLength(32);
                 expect(hasOverflow).toBe(true);
-                expect(fileList.reduce((count, file) => count + file.body.length, 0)).toBe(32_000);
-                expect(
-                    fileList.slice(0, 4).every((file) => file.state === "truncated" && file.body.length === 8000),
-                ).toBe(true);
-                expect(fileList.slice(4).every((file) => file.state === "omitted" && file.body === "")).toBe(true);
+                expect(fileList.every((file) => file.state === "loaded" && file.body.length === 100_000)).toBe(true);
                 const headSha = await git(dir, ["rev-parse", "HEAD"]);
                 workspace.setVersion({
                     headSha,
