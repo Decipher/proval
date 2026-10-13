@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "841dbc1d-59ee-4c1b-abdc-4c0400b7f3e7",
+  "id": "6841976b-0d9f-4b91-a7cf-1a7b98a21b5a",
   "prevId": "d54cf2e8-40e0-4bb1-a75f-a8efbc571842",
   "tables": {
     "activity": {
@@ -742,29 +742,7 @@
           "name": "api_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "auth_method": {
-          "name": "auth_method",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "'api_key'"
-        },
-        "oauth_credential": {
-          "name": "oauth_credential",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "oauth_status": {
-          "name": "oauth_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "timeout_second": {
@@ -774,6 +752,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": 600
+        },
+        "concurrency": {
+          "name": "concurrency",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",

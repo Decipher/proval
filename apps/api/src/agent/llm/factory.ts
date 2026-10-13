@@ -4,6 +4,7 @@ import { createOpenAiSender } from "./openai.js";
 import { createOpenAiResponsesSender } from "./openai-responses.js";
 import { createAnthropicSender } from "./anthropic.js";
 import { createXaiSender, type XaiSenderConfig } from "./xai.js";
+import { loadLimiter, type Limiter } from "./concurrency.js";
 
 export interface SenderSDKConfig {
     apiKey: string;
@@ -16,12 +17,16 @@ export interface SenderSDKConfig {
     maxRetries?: number;
 }
 
-export type SenderConfig =
+export type SenderConfig = (
     | (Omit<SenderSDKConfig, "fetch"> & {
           provider: "openai" | "openai_responses" | "anthropic";
           fetch?: SenderSDKConfig["fetch"];
       })
-    | (XaiSenderConfig & { provider: "xai" });
+    | (XaiSenderConfig & { provider: "xai" })
+) & {
+    modelProviderId?: number;
+    concurrency?: number | null;
+};
 
 // Bun applies a socket idle limit that fires while a slow model is still thinking.
 // Disable it and let the SDK deadline own the timeout.
@@ -35,17 +40,26 @@ function createLLMFetch() {
     };
 }
 
-export function createSender(config: SenderConfig): LlmSender {
-    if (config.provider === "xai") return createXaiSender(config);
+function withConcurrencyLimit(sender: LlmSender, limiter: Limiter): LlmSender {
+    return {
+        send: (messages, tools) => limiter.run(() => sender.send(messages, tools)),
+        getModel: () => sender.getModel(),
+    };
+}
 
-    const fetch = config.fetch ?? createLLMFetch();
-    switch (config.provider) {
+export function createSender(config: SenderConfig): LlmSender {
+    const { modelProviderId, concurrency, ...sdkConfig } = config;
+    const limiter = loadLimiter(modelProviderId, concurrency);
+    if (sdkConfig.provider === "xai") return withConcurrencyLimit(createXaiSender(sdkConfig), limiter);
+
+    const fetch = sdkConfig.fetch ?? createLLMFetch();
+    switch (sdkConfig.provider) {
         case "openai_responses":
-            return createOpenAiResponsesSender({ ...config, fetch });
+            return withConcurrencyLimit(createOpenAiResponsesSender({ ...sdkConfig, fetch }), limiter);
         case "anthropic":
-            return createAnthropicSender({ ...config, fetch });
+            return withConcurrencyLimit(createAnthropicSender({ ...sdkConfig, fetch }), limiter);
         case "openai":
         default:
-            return createOpenAiSender({ ...config, fetch });
+            return withConcurrencyLimit(createOpenAiSender({ ...sdkConfig, fetch }), limiter);
     }
 }

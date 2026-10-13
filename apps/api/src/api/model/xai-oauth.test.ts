@@ -40,12 +40,12 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
     cpSync(migrationPath, previousMigrationPath, { recursive: true });
     const journalPath = join(previousMigrationPath, "meta/_journal.json");
     const journal = JSON.parse(readFileSync(journalPath, "utf8"));
-    journal.entries = journal.entries.filter((entry: { idx: number }) => entry.idx < 46);
+    journal.entries = journal.entries.filter((entry: { idx: number }) => entry.idx < 47);
     writeFileSync(journalPath, JSON.stringify(journal));
     migrate(db, { migrationsFolder: previousMigrationPath });
     const legacyKey = encrypt("legacy key");
     db.$client.run(
-        "INSERT INTO model_provider (id, provider, label, base_url, api_key) VALUES (1, 'openai', 'Legacy', 'https://llm.example', ?)",
+        "INSERT INTO model_provider (id, provider, label, base_url, api_key, concurrency) VALUES (1, 'openai', 'Legacy', 'https://llm.example', ?, 3)",
         [legacyKey],
     );
     db.$client.run(
@@ -62,7 +62,7 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
     db.$client.run("PRAGMA foreign_keys = ON");
 
     const clientId = "b1a00492-073a-47ea-816f-4c329264a828";
-    const input = { label: "Subscription", timeoutSecond: 30 };
+    const input = { label: "Subscription", timeoutSecond: 30, concurrency: 2 };
     const device = {
         device_code: "private-device-code",
         user_code: "TEST-CODE",
@@ -138,6 +138,7 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
                 oauthStatus: null,
                 oauthCredential: null,
                 apiKey: legacyKey,
+                concurrency: 3,
             });
             expect(decrypt(row.apiKey!)).toBe("legacy key");
             for (const [table, field] of [
@@ -189,6 +190,7 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
             expect(service.get("browser", start.id).modelProviderId).toBe(result.modelProviderId);
             const row = await new ModelProviderService().findById(result.modelProviderId!);
             expect(row.apiKey).toBeNull();
+            expect(row.concurrency).toBe(2);
             expect(row.oauthCredential).not.toContain(token.access_token);
             expect(JSON.parse(decrypt(row.oauthCredential!))).toMatchObject({
                 accessToken: token.access_token,

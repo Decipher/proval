@@ -148,6 +148,7 @@ export class XaiOAuthService {
                     userCode: data.user_code,
                     label: input.label,
                     timeoutSecond: input.timeoutSecond,
+                    concurrency: input.concurrency ?? null,
                     verificationUri: verificationUri.href,
                     expiresAt: Date.now() + data.expires_in * 1000,
                 },
@@ -267,6 +268,7 @@ export class XaiOAuthService {
                             .values({
                                 label: attempt.input.label,
                                 timeoutSecond: attempt.input.timeoutSecond,
+                                concurrency: attempt.input.concurrency ?? null,
                                 provider: "openai_responses",
                                 baseUrl: xaiBaseUrl,
                                 authMethod: "xai_oauth",

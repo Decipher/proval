@@ -24,7 +24,7 @@
         modelProviderId?: number;
         initialData?: Pick<
             ModelProviderResponse,
-            "provider" | "label" | "baseUrl" | "timeoutSecond" | "authMethod" | "oauthStatus"
+            "provider" | "label" | "baseUrl" | "timeoutSecond" | "authMethod" | "oauthStatus" | "concurrency"
         >;
         border?: boolean;
     }
@@ -37,6 +37,7 @@
     let label = $state(initialData?.label ?? "");
     let baseUrl = $state(initialData?.baseUrl ?? "");
     let timeoutSecond = $state(String(initialData?.timeoutSecond ?? 600));
+    let concurrency = $state(initialData?.concurrency == null ? "" : String(initialData.concurrency));
     let apiKey = $state("");
     let apiKeyModalOpen = $state(false);
     let testModalOpen = $state(false);
@@ -71,6 +72,7 @@
         oauthAttempt = attempt;
         label = attempt.label;
         timeoutSecond = String(attempt.timeoutSecond);
+        concurrency = attempt.concurrency == null ? "" : String(attempt.concurrency);
         if (attempt.status === "authorized") {
             rememberAttempt(null);
             await goto("/model-provider", { invalidateAll: true });
@@ -124,6 +126,12 @@
             await openAlert("Enter a Display Name and a timeout between 10 and 7200 seconds");
             return;
         }
+        const concurrencyText = concurrency.trim();
+        const concurrencyValue = concurrencyText === "" ? null : Number(concurrencyText);
+        if (concurrencyValue !== null && (!Number.isInteger(concurrencyValue) || concurrencyValue < 1)) {
+            await openAlert("Concurrency must be an integer of at least 1, or null for no limit");
+            return;
+        }
         oauthLoading = true;
         oauthVersion++;
         clearTimeout(oauthTimer);
@@ -133,7 +141,12 @@
             const response = await fetchApi(oauthPath, {
                 method: "POST",
                 headers: oauthHeader,
-                body: JSON.stringify({ label: label.trim(), timeoutSecond: timeout, modelProviderId }),
+                body: JSON.stringify({
+                    label: label.trim(),
+                    timeoutSecond: timeout,
+                    concurrency: concurrencyValue,
+                    modelProviderId,
+                }),
             });
             const body = await response.json();
             if (!response.ok) throw new Error(body.error ?? "Unable to start authorization");
@@ -222,6 +235,12 @@
             await openAlert("Timeout must be between 10 and 7200 seconds");
             return;
         }
+        const concurrencyText = concurrency.trim();
+        const concurrencyValue = concurrencyText === "" ? null : Number(concurrencyText);
+        if (concurrencyValue !== null && (!Number.isInteger(concurrencyValue) || concurrencyValue < 1)) {
+            await openAlert("Concurrency must be an integer of at least 1, or null for no limit");
+            return;
+        }
         if (mode === "create") {
             if (!apiKey) {
                 await openAlert("API Key is required");
@@ -237,6 +256,7 @@
                 baseUrl,
                 apiKey,
                 timeoutSecond: timeout,
+                concurrency: concurrencyValue,
             };
 
             const res = await fetchApi("/model-provider", {
@@ -253,12 +273,13 @@
             const confirm = await openConfirm("Update this model provider?");
             if (!confirm) return;
             const body = isXaiOauth
-                ? { label, timeoutSecond: timeout }
+                ? { label, timeoutSecond: timeout, concurrency: concurrencyValue }
                 : {
                       provider,
                       label,
                       baseUrl,
                       timeoutSecond: timeout,
+                      concurrency: concurrencyValue,
                   };
 
             const res = await fetchApi(`/model-provider/${modelProviderId}`, {
@@ -430,6 +451,17 @@
                 </FormField>
             {/if}
         {/if}
+
+        <FormField label="Concurrency" description="Applies to every activity that uses this provider.">
+            {#snippet children({ id })}
+                <InputText
+                    {id}
+                    placeholder="Leave empty for unlimited"
+                    bind:value={concurrency}
+                    disabled={oauthLocked}
+                    numeric />
+            {/snippet}
+        </FormField>
 
         <FormField
             label="Request Timeout"

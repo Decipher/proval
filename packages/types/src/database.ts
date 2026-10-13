@@ -54,17 +54,31 @@ export type RepositoryResponse = Omit<
 };
 export type ModelProviderResponse = Pick<
     ModelProvider,
-    "id" | "provider" | "label" | "baseUrl" | "timeoutSecond" | "authMethod" | "oauthStatus" | "createdAt" | "updatedAt"
+    | "id"
+    | "provider"
+    | "label"
+    | "baseUrl"
+    | "timeoutSecond"
+    | "concurrency"
+    | "authMethod"
+    | "oauthStatus"
+    | "createdAt"
+    | "updatedAt"
 >;
 export type ModelProviderCreateInput = Pick<ModelProvider, "provider" | "label" | "baseUrl"> & {
     apiKey: string;
     timeoutSecond?: number;
+    concurrency?: number | null;
 };
-export type XaiOAuthAttemptInput = Pick<ModelProvider, "label" | "timeoutSecond"> & { modelProviderId?: number };
+export type XaiOAuthAttemptInput = Pick<ModelProvider, "label" | "timeoutSecond"> & {
+    modelProviderId?: number;
+    concurrency?: number | null;
+};
 export type XaiOAuthAttemptResponse = {
     id: string;
     label: string;
     timeoutSecond: number;
+    concurrency: number | null;
     status: "pending" | "authorized" | "denied" | "expired" | "cancelled" | "failed";
     userCode: string;
     verificationUri: string;
@@ -94,7 +108,9 @@ export type GitHubRepositoryResponse = {
 export type RepositoryUpdateInput = Partial<
     Omit<RepositoryInsert, "webhookSecret" | "webhookSigningToken" | "createdAt" | "updatedAt">
 >;
-export type ModelProviderUpdateInput = Partial<Pick<ModelProvider, "provider" | "label" | "baseUrl" | "timeoutSecond">>;
+export type ModelProviderUpdateInput = Partial<
+    Pick<ModelProvider, "provider" | "label" | "baseUrl" | "timeoutSecond" | "concurrency">
+>;
 export type AccessUpdateInput = Partial<Omit<AccessInsert, "accessToken" | "createdAt" | "updatedAt">>;
 export type GitHubAppUpdateInput = Partial<
     Omit<GitHubAppInsert, "privateKey" | "webhookSecret" | "createdAt" | "updatedAt">

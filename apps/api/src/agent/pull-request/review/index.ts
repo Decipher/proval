@@ -1,6 +1,7 @@
 import type { PullRequestReview } from "../index.js";
 import { postDevDebugPullRequestComment } from "../../shared/util/debug.js";
 import { generatePullRequestPrompt } from "../prompt/context.js";
+import { buildAgentInstructionPrompt } from "../prompt/agents-md.js";
 import { runReviewPlanAgent } from "./plan.service.js";
 import { runReviewSubAgent } from "./sub.service.js";
 import type { ReviewHandoff } from "./handoff.schema.js";
@@ -96,6 +97,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
 
         logAgent(activityId, "building pull request prompt", label);
         let prompt = await generatePullRequestPrompt(workspace, prIid, version, previousShaForPrompt);
+        const agentInstructionPrompt = await buildAgentInstructionPrompt(workspace, activityId);
 
         let priorBotSummary: string | null = null;
         let threadContext: string | null = null;
@@ -123,11 +125,17 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             isFollowUpReview,
             usePushScope,
             userPrompt,
+            agentInstructionPrompt,
         );
         const total = planResult.reviewUnitList.length;
         const reviewHandoffList: ReviewHandoff[] = [];
 
-        const subAgentResultList = await Promise.all(
+        // Every sub agent shares this workspace and the cleanup in the finally
+        // block below destroys it. Waiting for all of them to settle keeps a
+        // single failure from leaving the rest running against a workspace that
+        // no longer exists, which otherwise burns model token until the step
+        // budget runs out.
+        const subAgentSettledList = await Promise.allSettled(
             planResult.reviewUnitList.map((reviewUnit, index) =>
                 runReviewSubAgent(
                     provider,
@@ -142,9 +150,18 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
                     activityId,
                     usePushScope,
                     userPrompt,
+                    agentInstructionPrompt,
                 ),
             ),
         );
+
+        const subAgentResultList: Awaited<ReturnType<typeof runReviewSubAgent>>[] = [];
+        for (const settled of subAgentSettledList) {
+            if (settled.status === "rejected") {
+                throw settled.reason;
+            }
+            subAgentResultList.push(settled.value);
+        }
 
         const sortedHandoffList = [...reviewHandoffList].sort((a, b) => a.unitId - b.unitId);
 
@@ -165,6 +182,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
             priorBotSummary,
             usePushScope,
             userPrompt,
+            agentInstructionPrompt,
         );
 
         const usage = {

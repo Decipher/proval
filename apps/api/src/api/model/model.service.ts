@@ -20,12 +20,14 @@ import { z } from "zod";
 
 const providerSchema = z.enum(["openai", "openai_responses", "anthropic"]);
 const timeoutSchema = z.number().int().min(10).max(7200);
+const concurrencySchema = z.number().int().min(1).nullable().optional();
 const labelSchema = z.string().trim().min(1).max(200);
 const baseUrlSchema = z.url().refine((value) => ["http:", "https:"].includes(new URL(value).protocol));
 export const xaiOAuthAttemptSchema = z
     .object({
         label: labelSchema,
         timeoutSecond: timeoutSchema,
+        concurrency: concurrencySchema,
         modelProviderId: z.number().int().positive().optional(),
     })
     .strict();
@@ -38,6 +40,8 @@ export function createModelProviderSender(
     const config = {
         model,
         timeoutSecond: modelProvider.timeoutSecond,
+        modelProviderId: modelProvider.id,
+        concurrency: modelProvider.concurrency,
         reasoningEffort,
     };
     if (modelProvider.authMethod === "xai_oauth") {
@@ -77,6 +81,7 @@ export class ModelProviderService {
                 baseUrl: baseUrlSchema,
                 apiKey: z.string().min(1),
                 timeoutSecond: timeoutSchema.optional(),
+                concurrency: concurrencySchema,
             })
             .strict()
             .parse(data);
@@ -89,7 +94,11 @@ export class ModelProviderService {
 
     public async update(modelProviderId: number, data: ModelProviderUpdateInput): Promise<ModelProvider> {
         const current = await this.findById(modelProviderId);
-        const editable = { label: labelSchema.optional(), timeoutSecond: timeoutSchema.optional() };
+        const editable = {
+            label: labelSchema.optional(),
+            timeoutSecond: timeoutSchema.optional(),
+            concurrency: concurrencySchema,
+        };
         const cleanData =
             current.authMethod === "xai_oauth"
                 ? z.object(editable).strict().parse(data)
@@ -126,10 +135,11 @@ export class ModelProviderService {
             label,
             baseUrl,
             timeoutSecond,
+            concurrency,
             authMethod,
             oauthStatus,
             createdAt,
-            updatedAt
+            updatedAt,
         } = modelProvider;
 
         return {
@@ -138,10 +148,11 @@ export class ModelProviderService {
             label,
             baseUrl,
             timeoutSecond,
+            concurrency,
             authMethod,
             oauthStatus,
             createdAt,
-            updatedAt
+            updatedAt,
         };
     }
 
@@ -198,10 +209,7 @@ export class ModelProviderService {
 
     public async verifySaved(modelProviderId: number, modelName: string): Promise<void> {
         const provider = await this.findById(modelProviderId);
-        await createModelProviderSender(
-            provider,
-            z.string().trim().min(1).parse(modelName)
-        ).send(
+        await createModelProviderSender(provider, z.string().trim().min(1).parse(modelName)).send(
             [{ role: "user", content: "Hello" }],
             [],
         );

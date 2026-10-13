@@ -53,6 +53,7 @@ export const modelProviderTable = sqliteTable("model_provider", {
     oauthCredential: text(),
     oauthStatus: text({ enum: ["authorized", "reauthorization_required"] }),
     timeoutSecond: integer().notNull().default(600),
+    concurrency: integer(),
     ...timeStamp,
 });
 
