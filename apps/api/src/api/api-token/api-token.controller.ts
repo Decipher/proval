@@ -3,6 +3,7 @@ import type { ApiTokenCreateInput } from "@proval/types";
 import { apiScopeValueList } from "@proval/types";
 import { apiTokenService, isScopeListValid } from "./api-token.service.js";
 import type { AuthVariables } from "../auth/auth.middleware.js";
+import { validateExpiresInDay } from "./api-token.validation.js";
 
 type AppContext = Context<{ Variables: AuthVariables }>;
 
@@ -34,6 +35,10 @@ export async function createApiToken(c: AppContext) {
     }
     if (!Array.isArray(body.scopeList) || !isScopeListValid(body.scopeList)) {
         return c.json({ error: `scopeList must be a non empty subset of ${apiScopeValueList.join(", ")}` }, 400);
+    }
+    const expiryError = validateExpiresInDay(body.expiresInDay);
+    if (expiryError) {
+        return c.json({ error: expiryError }, 400);
     }
 
     const created = await apiTokenService.create(user.id, {

@@ -39,7 +39,15 @@ const scopeRuleList: ScopeRule[] = [
     { method: "DELETE", pattern: /^\/model-provider\/\d+$/, scope: "model:write" },
 
     { method: "GET", pattern: /^\/access(\/\d+)?$/, scope: "access:read" },
+    // Lists the projects the connection's own credential can see on the git
+    // host, so it reports the reach of the access rather than Proval's
+    // repository rows. That makes it access:read, not repository:read.
+    { method: "GET", pattern: /^\/access\/\d+\/repository$/, scope: "access:read" },
     { method: "POST", pattern: /^\/access$/, scope: "access:write" },
+    // Both test routes exercise a credential against the git host, one for a
+    // candidate credential in the body and one for a stored access.
+    { method: "POST", pattern: /^\/access\/test$/, scope: "access:write" },
+    { method: "POST", pattern: /^\/access\/\d+\/test$/, scope: "access:write" },
     { method: "PUT", pattern: /^\/access\/\d+$/, scope: "access:write" },
     { method: "PATCH", pattern: /^\/access\/\d+\/.*$/, scope: "access:write" },
     { method: "DELETE", pattern: /^\/access\/\d+$/, scope: "access:write" },

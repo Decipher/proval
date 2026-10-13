@@ -52,16 +52,29 @@
         if (!canSubmit) {
             return;
         }
+        // Only an empty field means "never expires". Anything typed must parse
+        // to a positive whole number, because coercing an unparseable value to
+        // null would mint a permanent credential while the operator believes
+        // they set an expiry.
+        const rawDay = expiresInDay.trim();
+        const parsedDay = Number.parseInt(rawDay, 10);
+        const hasExpiry = rawDay !== "";
+        if (hasExpiry && (!Number.isInteger(parsedDay) || parsedDay <= 0 || String(parsedDay) !== rawDay)) {
+            await openAlert(
+                "Expires in days must be a whole number greater than zero, or empty for a token that never expires.",
+            );
+            return;
+        }
+
         isBusy = true;
         try {
-            const parsedDay = Number.parseInt(expiresInDay, 10);
             const response = await fetchApi("/api-token", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: name.trim(),
                     scopeList: selectedScopeList,
-                    expiresInDay: Number.isFinite(parsedDay) && parsedDay > 0 ? parsedDay : null,
+                    expiresInDay: hasExpiry ? parsedDay : null,
                 }),
             });
             if (!response.ok) {
@@ -201,7 +214,7 @@
 
                 <div>
                     <FieldTitle class="mb-1 ml-1">Expires in days</FieldTitle>
-                    <Description placement="below">Leave empty for a token that does not expire.</Description>
+                    <Description placement="below">Whole days. Empty means the token never expires.</Description>
                     <InputText bind:value={expiresInDay} placeholder="90" disabled={isBusy} />
                 </div>
 

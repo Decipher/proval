@@ -18,6 +18,28 @@ describe("findRequiredScope", () => {
         expect(findRequiredScope("PUT", "/settings")).toBe("settings:write");
     });
 
+    test("covers every access route, so a scoped token is not denied one by omission", () => {
+        // Each of these is registered in access/index.ts. A missing rule here
+        // does not fail open, it fails closed with a 403 that looks like a
+        // permission problem rather than a gap in this table.
+        expect(findRequiredScope("GET", "/access")).toBe("access:read");
+        expect(findRequiredScope("GET", "/access/4")).toBe("access:read");
+        expect(findRequiredScope("GET", "/access/4/repository")).toBe("access:read");
+        expect(findRequiredScope("POST", "/access")).toBe("access:write");
+        expect(findRequiredScope("POST", "/access/test")).toBe("access:write");
+        expect(findRequiredScope("POST", "/access/4/test")).toBe("access:write");
+        expect(findRequiredScope("PUT", "/access/4")).toBe("access:write");
+        expect(findRequiredScope("PATCH", "/access/4/access-token")).toBe("access:write");
+        expect(findRequiredScope("DELETE", "/access/4")).toBe("access:write");
+    });
+
+    test("does not let the access test route swallow a numeric id", () => {
+        // "/access/test" and "/access/4/test" are different rules, and neither
+        // should match a path the other owns.
+        expect(findRequiredScope("POST", "/access/4/repository")).toBeNull();
+        expect(findRequiredScope("GET", "/access/test")).toBeNull();
+    });
+
     test("returns null for a route no rule covers, so the caller denies it", () => {
         expect(findRequiredScope("GET", "/github/app")).toBeNull();
         expect(findRequiredScope("POST", "/github/installation")).toBeNull();
