@@ -3,29 +3,25 @@ import type { LlmSender } from "./loop.js";
 import { createOpenAiSender } from "./openai.js";
 import { createOpenAiResponsesSender } from "./openai-responses.js";
 import { createAnthropicSender } from "./anthropic.js";
-import { createXaiSender, type XaiSenderConfig } from "./xai.js";
+import { createXaiSender } from "./xai.js";
 import { loadLimiter, type Limiter } from "./concurrency.js";
 
-export interface SenderSDKConfig {
+export interface SenderConfig {
+    provider: "openai" | "openai_responses" | "anthropic" | "xai";
     apiKey: string;
     baseURL: string;
     model: string;
     timeoutSecond: number;
     maxOutputToken?: number;
     reasoningEffort?: ReasoningEffort;
-    fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
     maxRetries?: number;
-}
-
-export type SenderConfig = (
-    | (Omit<SenderSDKConfig, "fetch"> & {
-          provider: "openai" | "openai_responses" | "anthropic";
-          fetch?: SenderSDKConfig["fetch"];
-      })
-    | (XaiSenderConfig & { provider: "xai" })
-) & {
     modelProviderId?: number;
     concurrency?: number | null;
+    getAccessToken?: (rejectedAccessToken?: string) => Promise<string>;
+}
+
+export type SenderSDKConfig = Omit<SenderConfig, "provider" | "modelProviderId" | "concurrency" | "getAccessToken"> & {
+    fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 };
 
 // Bun applies a socket idle limit that fires while a slow model is still thinking.
@@ -48,18 +44,30 @@ function withConcurrencyLimit(sender: LlmSender, limiter: Limiter): LlmSender {
 }
 
 export function createSender(config: SenderConfig): LlmSender {
-    const { modelProviderId, concurrency, ...sdkConfig } = config;
+    const { modelProviderId, concurrency, provider, getAccessToken, ...sdkConfig } = config;
     const limiter = loadLimiter(modelProviderId, concurrency);
-    if (sdkConfig.provider === "xai") return withConcurrencyLimit(createXaiSender(sdkConfig), limiter);
+    if (provider === "xai") {
+        if (!getAccessToken) throw new Error("xAI access token callback is missing");
+        return withConcurrencyLimit(
+            createXaiSender({
+                getAccessToken,
+                model: config.model,
+                timeoutSecond: config.timeoutSecond,
+                reasoningEffort: config.reasoningEffort,
+            }),
+            limiter,
+        );
+    }
 
-    const fetch = sdkConfig.fetch ?? createLLMFetch();
-    switch (sdkConfig.provider) {
+    const fetch = createLLMFetch();
+    const sdk = { ...sdkConfig, fetch };
+    switch (provider) {
         case "openai_responses":
-            return withConcurrencyLimit(createOpenAiResponsesSender({ ...sdkConfig, fetch }), limiter);
+            return withConcurrencyLimit(createOpenAiResponsesSender(sdk), limiter);
         case "anthropic":
-            return withConcurrencyLimit(createAnthropicSender({ ...sdkConfig, fetch }), limiter);
+            return withConcurrencyLimit(createAnthropicSender(sdk), limiter);
         case "openai":
         default:
-            return withConcurrencyLimit(createOpenAiSender({ ...sdkConfig, fetch }), limiter);
+            return withConcurrencyLimit(createOpenAiSender(sdk), limiter);
     }
 }

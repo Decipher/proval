@@ -23,14 +23,6 @@ const timeoutSchema = z.number().int().min(10).max(7200);
 const concurrencySchema = z.number().int().min(1).nullable().optional();
 const labelSchema = z.string().trim().min(1).max(200);
 const baseUrlSchema = z.url().refine((value) => ["http:", "https:"].includes(new URL(value).protocol));
-export const xaiOAuthAttemptSchema = z
-    .object({
-        label: labelSchema,
-        timeoutSecond: timeoutSchema,
-        concurrency: concurrencySchema,
-        modelProviderId: z.number().int().positive().optional(),
-    })
-    .strict();
 
 export function createModelProviderSender(
     modelProvider: ModelProvider,
@@ -48,6 +40,8 @@ export function createModelProviderSender(
         return createSender({
             ...config,
             provider: "xai",
+            apiKey: "oauth",
+            baseURL: modelProvider.baseUrl,
             getAccessToken: (rejected) => xaiOAuthService.getAccessToken(modelProvider.id, rejected),
         });
     }
@@ -226,7 +220,7 @@ export class ModelProviderService {
             baseURL: config.baseUrl,
             model: config.modelName,
             apiKey: config.apiKey,
-            timeoutSecond: config.timeoutSecond,
+            timeoutSecond: timeoutSchema.parse(config.timeoutSecond),
             maxOutputToken: 1,
         });
         await sender.send([{ role: "user", content: "Hello" }], []);

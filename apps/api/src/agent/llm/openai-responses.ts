@@ -103,7 +103,7 @@ function convertToOpenAiInput(message: Message): OpenAI.Responses.ResponseInputI
         case "assistant": {
             // Replay complete output to retain reasoning across tool calls without server storage.
             if (message.responseOutputList) {
-                return message.responseOutputList;
+                return message.responseOutputList as OpenAI.Responses.ResponseInputItem[];
             }
             const inputList: OpenAI.Responses.ResponseInputItem[] = [];
             if (message.content !== null) {

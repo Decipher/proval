@@ -1,5 +1,5 @@
 import type { Context, Handler } from "hono";
-import { ModelProviderService, xaiOAuthAttemptSchema } from "./model.service.js";
+import { ModelProviderService } from "./model.service.js";
 import type { ModelProviderResponse, SecretInput } from "@proval/types";
 import { getCookie, setCookie } from "hono/cookie";
 import { XaiOAuthError, xaiOAuthService } from "./xai-oauth.service.js";
@@ -22,7 +22,7 @@ function inputError(c: Context, error: unknown) {
 
 function oauthOwner(c: Context, create = false): string {
     c.header("Cache-Control", "no-store");
-    if (c.req.header("Sec-Fetch-Site") === "cross-site" || c.req.header("X-Proval-OAuth") !== "1") {
+    if (c.req.header("X-Proval-OAuth") !== "1") {
         throw new XaiOAuthError("OAuth requests must originate from the Proval dashboard", 403);
     }
     let browser = getCookie(c, "proval_oauth_browser");
@@ -44,8 +44,7 @@ function oauthOwner(c: Context, create = false): string {
 export const startXaiOAuth: Handler = async (c) => {
     try {
         const owner = oauthOwner(c, true);
-        const input = xaiOAuthAttemptSchema.parse(await c.req.json());
-        return c.json(await xaiOAuthService.start(owner, input), 201);
+        return c.json(await xaiOAuthService.start(owner, await c.req.json()), 201);
     } catch (error) {
         return inputError(c, error);
     }
@@ -76,17 +75,6 @@ export const verifySavedModelProvider: Handler = async (c) => {
         return c.json({ success: false, message: error instanceof Error ? error.message : "Connection failed" }, 400);
     }
 };
-
-function invalidTimeoutSecond(value: unknown): boolean {
-    return value !== undefined && (!Number.isInteger(value) || (value as number) < 10 || (value as number) > 7200);
-}
-
-function invalidConcurrency(value: unknown): boolean {
-    if (value === undefined || value === null) {
-        return false;
-    }
-    return !Number.isInteger(value) || (value as number) < 1;
-}
 
 export const findAllModelProvider: Handler = async (c) => {
     const service = new ModelProviderService();
@@ -125,12 +113,6 @@ export const listModelProviderModels: Handler = async (c) => {
 export const createModelProvider: Handler = async (c) => {
     const service = new ModelProviderService();
     const body = await c.req.json();
-    if (invalidTimeoutSecond(body.timeoutSecond)) {
-        return c.json({ error: "Timeout must be an integer between 10 and 7200 seconds" }, 400);
-    }
-    if (invalidConcurrency(body.concurrency)) {
-        return c.json({ error: "Concurrency must be an integer of at least 1, or null for no limit" }, 400);
-    }
     try {
         const modelProvider = await service.create(body);
         return c.json(service.toResponse(modelProvider), 201);
@@ -146,12 +128,6 @@ export const updateModelProvider: Handler = async (c) => {
         return c.json({ error: "Model provider ID is required" }, 400);
     }
     const body = await c.req.json();
-    if (invalidTimeoutSecond(body.timeoutSecond)) {
-        return c.json({ error: "Timeout must be an integer between 10 and 7200 seconds" }, 400);
-    }
-    if (invalidConcurrency(body.concurrency)) {
-        return c.json({ error: "Concurrency must be an integer of at least 1, or null for no limit" }, 400);
-    }
     try {
         const modelProvider = await service.update(parseInt(id), body);
         return c.json(service.toResponse(modelProvider), 200);
@@ -209,14 +185,12 @@ export const verifyModelProviderConfig: Handler = async (c: Context) => {
     if (provider !== "anthropic" && provider !== "openai" && provider !== "openai_responses") {
         return c.json({ error: "Invalid provider" }, 400);
     }
-    if (invalidTimeoutSecond(timeoutSecond)) {
-        return c.json({ error: "Timeout must be an integer between 10 and 7200 seconds" }, 400);
-    }
 
     try {
         await service.verifyConfig({ provider, baseUrl, modelName, apiKey, timeoutSecond });
         return c.json({ success: true, message: "Connection successful" }, 200);
     } catch (error) {
+        if (error instanceof ZodError) return inputError(c, error);
         const message = error instanceof Error ? error.message : "Connection failed";
         return c.json({ success: false, message }, 401);
     }

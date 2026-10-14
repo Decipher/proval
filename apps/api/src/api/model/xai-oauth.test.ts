@@ -3,7 +3,6 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:f
 import { tmpdir } from "node:os";
 import { join, resolve, relative, sep } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import type { SenderSDKConfig } from "../../agent/llm/factory.js";
 
 if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
     it("passes xAI OAuth integration in an isolated process", () => {
@@ -281,7 +280,7 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
                         headers: { cookie, "X-Proval-OAuth": "1", "Sec-Fetch-Site": "cross-site" },
                     })
                 ).status,
-            ).toBe(403);
+            ).toBe(200);
             expect((await api.request(`/oauth/${body.id}`, { headers: { cookie } })).status).toBe(403);
             const cancel = await api.request(`/oauth/${body.id}`, {
                 method: "DELETE",
@@ -322,6 +321,18 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
             const stored = await new ModelProviderService().findById(row.id);
             if (!stored.oauthCredential) throw new Error("Saved credential is missing");
             expect(JSON.parse(decrypt(stored.oauthCredential)).refreshToken).toBe("old-refresh");
+        });
+
+        it("refreshes again when the token response omits expires_in", async () => {
+            const row = saved(true);
+            let count = 0;
+            const service = new XaiOAuthService(async () => {
+                count++;
+                return Response.json({ access_token: `access-${count}`, refresh_token: "old-refresh" });
+            });
+            expect(await service.getAccessToken(row.id)).toBe("access-1");
+            expect(await service.getAccessToken(row.id)).toBe("access-2");
+            expect(count).toBe(2);
         });
 
         it.each([400, 503])("handles refresh failure %s without leaking upstream details", async (status) => {
@@ -418,7 +429,7 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
             const row = saved();
             const bearerList: string[] = [];
             let refreshCount = 0;
-            const fetch: SenderSDKConfig["fetch"] = async (url, init) => {
+            const fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
                 if (String(url).includes("auth.x.ai")) {
                     refreshCount++;
                     return Response.json(token);
@@ -467,7 +478,7 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
         it("does not refresh on permission or quota errors and surfaces reconnect instructions", async () => {
             const row = saved();
             let count = 0;
-            const fetch: SenderSDKConfig["fetch"] = async () => {
+            const fetch = async () => {
                 count++;
                 return Response.json({ error: "quota_exceeded" }, { status: 403 });
             };

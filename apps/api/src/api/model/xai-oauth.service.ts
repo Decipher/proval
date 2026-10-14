@@ -4,8 +4,17 @@ import { and, eq } from "drizzle-orm";
 import { setTimeout as delay } from "node:timers/promises";
 import db from "../../db/index.js";
 import { decrypt, encrypt } from "../../util/encrypt.js";
-import type { SenderSDKConfig } from "../../agent/llm/factory.js";
 import { xaiBaseUrl } from "../../agent/llm/xai.js";
+import { z } from "zod";
+
+const xaiOAuthAttemptSchema = z
+    .object({
+        label: z.string().trim().min(1).max(200),
+        timeoutSecond: z.number().int().min(10).max(7200),
+        concurrency: z.number().int().min(1).nullable().optional(),
+        modelProviderId: z.number().int().positive().optional(),
+    })
+    .strict();
 
 const clientId = "b1a00492-073a-47ea-816f-4c329264a828";
 const authUrl = "https://auth.x.ai/oauth2";
@@ -40,7 +49,8 @@ export class XaiOAuthService {
     private readonly refreshMap = new Map<number, Promise<Credential>>();
 
     constructor(
-        private readonly request: SenderSDKConfig["fetch"] = (input, init) => fetch(input, init),
+        private readonly request: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = (input, init) =>
+            fetch(input, init),
         private readonly wait = (ms: number, signal: AbortSignal) => delay(ms, undefined, { signal }),
     ) {}
 
@@ -74,31 +84,24 @@ export class XaiOAuthService {
             throw new XaiOAuthError("xAI did not return a usable renewable credential", 502);
         }
 
-        let expiresAt: number | null = null;
-        if (typeof data.expires_in === "number" && Number.isFinite(data.expires_in) && data.expires_in > 0) {
-            expiresAt = Date.now() + data.expires_in * 1000;
-        } else {
-            // An unverified JWT expiry is only a refresh scheduling hint.
-            try {
-                const payload = JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString());
-                if (typeof payload.exp === "number" && Number.isFinite(payload.exp)) expiresAt = payload.exp * 1000;
-            } catch {
-                /* Opaque access tokens are supported */
-            }
-        }
+        const expiresAt =
+            typeof data.expires_in === "number" && Number.isFinite(data.expires_in) && data.expires_in > 0
+                ? Date.now() + data.expires_in * 1000
+                : null;
 
         return { clientId: previous?.clientId ?? clientId, accessToken, refreshToken, expiresAt };
     }
 
-    async start(owner: string, input: XaiOAuthAttemptInput): Promise<XaiOAuthAttemptResponse> {
+    async start(owner: string, input: unknown): Promise<XaiOAuthAttemptResponse> {
+        const attemptInput = xaiOAuthAttemptSchema.parse(input);
         if (this.startingOwnerSet.has(owner)) throw new XaiOAuthError("Authorization is already starting", 409);
         if (this.attemptMap.size + this.startingOwnerSet.size >= 256) {
             throw new XaiOAuthError("Too many authorization attempts. Try again later", 429);
         }
 
         let originalCredential: string | null = null;
-        if (input.modelProviderId !== undefined) {
-            const provider = this.provider(input.modelProviderId);
+        if (attemptInput.modelProviderId !== undefined) {
+            const provider = this.provider(attemptInput.modelProviderId);
             originalCredential = provider.oauthCredential;
         }
 
@@ -129,26 +132,23 @@ export class XaiOAuthService {
             const verificationUri = new URL(String(data.verification_uri_complete ?? data.verification_uri));
             if (
                 verificationUri.protocol !== "https:" ||
-                !["accounts.x.ai", "auth.x.ai"].includes(verificationUri.hostname) ||
-                verificationUri.username ||
-                verificationUri.password ||
-                verificationUri.port
+                !["accounts.x.ai", "auth.x.ai"].includes(verificationUri.hostname)
             ) {
                 throw new XaiOAuthError("xAI returned an unexpected verification address", 502);
             }
 
             const attempt: Attempt = {
                 owner,
-                input,
+                input: attemptInput,
                 originalCredential,
                 abort: new AbortController(),
                 response: {
                     id: crypto.randomUUID(),
                     status: "pending",
                     userCode: data.user_code,
-                    label: input.label,
-                    timeoutSecond: input.timeoutSecond,
-                    concurrency: input.concurrency ?? null,
+                    label: attemptInput.label,
+                    timeoutSecond: attemptInput.timeoutSecond,
+                    concurrency: attemptInput.concurrency ?? null,
                     verificationUri: verificationUri.href,
                     expiresAt: Date.now() + data.expires_in * 1000,
                 },
@@ -239,7 +239,6 @@ export class XaiOAuthService {
                     };
                     const id = attempt.input.modelProviderId;
 
-                    // Synchronous writes make completion and cancellation mutually exclusive.
                     if (id !== undefined) {
                         if (!attempt.originalCredential)
                             throw new XaiOAuthError("Original authorization is missing", 409);
@@ -338,7 +337,8 @@ export class XaiOAuthService {
         const credential = JSON.parse(decrypt(provider.oauthCredential)) as Credential;
         const needsRefresh =
             rejectedAccessToken === credential.accessToken ||
-            (credential.expiresAt !== null && credential.expiresAt <= Date.now() + 120000);
+            credential.expiresAt === null ||
+            credential.expiresAt <= Date.now() + 60000;
         if (!needsRefresh) return credential.accessToken;
 
         const active = this.refreshMap.get(id);
@@ -395,7 +395,6 @@ export class XaiOAuthService {
             .returning({ id: modelProviderTable.id })
             .get();
         if (!saved) {
-            // Return the new authorization without recursively joining this refresh promise.
             try {
                 return JSON.parse(decrypt(this.provider(id).oauthCredential)) as Credential;
             } catch (error) {

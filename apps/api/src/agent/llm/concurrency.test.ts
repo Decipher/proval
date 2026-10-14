@@ -165,25 +165,32 @@ if (process.env.PROVAL_CONCURRENCY_TEST_CHILD !== "1") {
                     modelProviderId: 9001,
                     concurrency: 1,
                     getAccessToken: async () => "test",
-                    fetch: async () => {
-                        requestCount++;
-                        active++;
-                        peak = Math.max(peak, active);
-                        entered.resolve();
-                        await gate.promise;
-                        active--;
-                        return Response.json({ error: { message: "Invalid test request" } }, { status: 400 });
-                    },
                 };
+                const originalFetch = globalThis.fetch;
+                globalThis.fetch = (async () => {
+                    requestCount++;
+                    active++;
+                    peak = Math.max(peak, active);
+                    entered.resolve();
+                    await gate.promise;
+                    active--;
+                    return Response.json({ error: { message: "Invalid test request" } }, { status: 400 });
+                }) as unknown as typeof fetch;
                 const senderList = [createSender(config), createSender(config)];
                 const run = Promise.allSettled(
                     senderList.map((sender) => sender.send([{ role: "user", content: "Test" }], [])),
                 );
-                await entered.promise;
-                await Bun.sleep(0);
-                const startedCount = requestCount;
-                gate.resolve();
-                const resultList = await run;
+                let startedCount = 0;
+                let resultList: PromiseSettledResult<unknown>[] = [];
+                try {
+                    await entered.promise;
+                    await Bun.sleep(0);
+                    startedCount = requestCount;
+                    gate.resolve();
+                    resultList = await run;
+                } finally {
+                    globalThis.fetch = originalFetch;
+                }
                 expect(startedCount).toBe(1);
                 expect(peak).toBe(1);
                 expect(requestCount).toBe(2);
