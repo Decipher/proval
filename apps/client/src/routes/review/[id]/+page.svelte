@@ -10,7 +10,12 @@
     import { formatDuration, formatTimeAgo } from "$lib/utils";
     import fetchApi from "$lib/utils";
     import { activityTargetWebUrl, viewInProviderLabel } from "../../repository/[id]/load.js";
-    import type { ActivityLogEntry, ActivityLogResponse, ActivityResponse } from "@proval/types";
+    import type {
+        ActivityLogEntry,
+        ActivityLogResponse,
+        ActivityResponse,
+        ActivityStatusResponse,
+    } from "@proval/types";
     import type { PageProps } from "./$types";
     import { readReviewListBackHref } from "../filterQuery.js";
     import { untrack } from "svelte";
@@ -23,6 +28,9 @@
     const { data }: PageProps = $props();
     let review = $state<ActivityResponse>(data.review);
     let log = $state<ActivityLogResponse>(data.log);
+    let logCount = data.log.logs.length;
+    let pollInFlight = false;
+    let pollAgain = false;
     const status = $derived(activityStatusBadge(review.status));
     const target = $derived(activityTargetLabel(review.type, review.targetIid));
     const typeLabel = $derived(activityTypeLabel(review.type));
@@ -158,15 +166,35 @@
     const visibleLogList = $derived(logRowList.filter((row) => !selectedLabel || row.entry.label === selectedLabel));
 
     async function refreshWhileRunning(id: number): Promise<void> {
-        const [logResponse, metaResponse] = await Promise.all([
-            fetchApi(`/activity/${id}/log`),
-            fetchApi(`/activity/${id}`),
-        ]);
-        if (logResponse.ok) {
-            log = await logResponse.json();
+        if (pollInFlight) {
+            pollAgain = true;
+            return;
         }
-        if (metaResponse.ok) {
-            review = await metaResponse.json();
+        pollInFlight = true;
+        try {
+            do {
+                pollAgain = false;
+                const from = logCount;
+                const [logResponse, statusResponse] = await Promise.all([
+                    fetchApi(`/activity/${id}/log?from=${from}`),
+                    fetchApi(`/activity/${id}/status`),
+                ]);
+                if (id !== review.id) return;
+                if (logResponse.ok) {
+                    const delta = (await logResponse.json()) as ActivityLogResponse;
+                    if (delta.from === logCount && delta.logs.length > 0) {
+                        log = { ...log, status: delta.status, logs: [...log.logs, ...delta.logs] };
+                        logCount += delta.logs.length;
+                    }
+                }
+                if (id !== review.id) return;
+                if (statusResponse.ok) {
+                    const nextStatus = (await statusResponse.json()) as ActivityStatusResponse;
+                    review = { ...review, ...nextStatus };
+                }
+            } while (pollAgain);
+        } finally {
+            pollInFlight = false;
         }
     }
 
@@ -176,6 +204,7 @@
         untrack(() => {
             review = nextReview;
             log = nextLog;
+            logCount = nextLog.logs.length;
         });
     });
 

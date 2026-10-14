@@ -3,6 +3,7 @@ import type {
     Activity,
     ActivityLogEntry,
     ActivityLogResponse,
+    ActivityStatusResponse,
     CommonLogEntry,
     ActivityResponse,
     ActivityStats,
@@ -398,6 +399,23 @@ export class ActivityService {
         return rows[0];
     }
 
+    public async findStatusById(id: number): Promise<ActivityStatusResponse | null> {
+        const rows = await db
+            .select({
+                status: activityTable.status,
+                completedAt: activityTable.completedAt,
+                errorMessage: activityTable.errorMessage,
+                inputToken: activityTable.inputToken,
+                cachedInputToken: activityTable.cachedInputToken,
+                outputToken: activityTable.outputToken,
+            })
+            .from(activityTable)
+            .where(eq(activityTable.id, id))
+            .limit(1);
+
+        return rows[0] ?? null;
+    }
+
     public async isCanceled(id: number): Promise<boolean> {
         const activity = await this.findById(id);
         return activity?.status === "canceled";
@@ -436,7 +454,13 @@ export class ActivityService {
         return total > 0;
     }
 
-    public async findLogListById(id: number): Promise<ActivityLogResponse | null> {
+    public async findLogListById(id: number, from?: number): Promise<ActivityLogResponse | null> {
+        // ponytail: logs live in one JSON column, so a tail read still loads the whole value. A log table is the upgrade if poll CPU matters.
+        const respond = (status: Activity["status"], logs: ActivityLogEntry[]): ActivityLogResponse => {
+            if (from == null) return { status, logVersion: "1", logs };
+            return { status, logVersion: "1", from, logs: logs.slice(from) };
+        };
+
         const rows = await db
             .select({ status: activityTable.status, logVersion: activityTable.logVersion, logs: activityTable.logs })
             .from(activityTable)
@@ -449,7 +473,7 @@ export class ActivityService {
 
         const logList = rows[0].logs ?? [];
         if (rows[0].logVersion === "1") {
-            return { status: rows[0].status, logVersion: "1", logs: logList as ActivityLogEntry[] };
+            return respond(rows[0].status, logList as ActivityLogEntry[]);
         }
 
         // Convert legacy log schema to newer version and save to db
@@ -469,7 +493,7 @@ export class ActivityService {
 
                 const currentLogList = activity.logs ?? [];
                 if (activity.logVersion === "1") {
-                    return { status: activity.status, logVersion: "1", logs: currentLogList as ActivityLogEntry[] };
+                    return respond(activity.status, currentLogList as ActivityLogEntry[]);
                 }
                 const convertedLogList = currentLogList.map((entry) =>
                     isActivityLogEntry(entry) ? entry : convertLegacyActivityLog(entry),
@@ -478,7 +502,7 @@ export class ActivityService {
                     .set({ logs: convertedLogList, logVersion: "1", updatedAt: sql`${activityTable.updatedAt}` })
                     .where(eq(activityTable.id, id))
                     .run();
-                return { status: activity.status, logVersion: "1", logs: convertedLogList };
+                return respond(activity.status, convertedLogList);
             },
             { behavior: "immediate" },
         );

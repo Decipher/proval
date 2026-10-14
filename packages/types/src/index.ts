@@ -74,4 +74,5 @@ export type {
     ActivityLogEntry,
     ActivityLogResponse,
     ActivityResponse,
+    ActivityStatusResponse,
 } from "./activity-log.js";
