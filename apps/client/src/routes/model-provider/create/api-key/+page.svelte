@@ -1,8 +1,8 @@
 <script lang="ts">
     import DefaultLayout from "$lib/components/layout/DefaultLayout.svelte";
-    import ModelForm from "$lib/components/organism/ModelForm.svelte";
+    import ModelAPIForm from "$lib/components/organism/ModelAPIForm.svelte";
 </script>
 
 <DefaultLayout narrow title="Create API Key Model Provider">
-    <ModelForm mode="create" />
+    <ModelAPIForm mode="create" />
 </DefaultLayout>

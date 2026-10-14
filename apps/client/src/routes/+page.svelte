@@ -109,7 +109,7 @@
                 id: "model-provider",
                 title: "Connect a model provider",
                 description: "Add a model provider for reviews and replies.",
-                href: "/model-provider/create/api-key",
+                href: "/model-provider/create",
                 ctaLabel: "Add model provider",
                 manageLabel: "Manage →",
                 complete: hasModel,
