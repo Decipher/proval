@@ -346,7 +346,7 @@ export class Workspace {
                 }
             }
         }
-        
+
         const directoryList = [...directorySet].sort((a, b) => {
             const depth = (path: string) => (path ? path.split("/").length : 0);
             return depth(a) - depth(b) || (a < b ? -1 : a > b ? 1 : 0);
