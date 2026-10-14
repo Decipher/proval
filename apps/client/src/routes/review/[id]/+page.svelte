@@ -165,6 +165,11 @@
     const labelList = $derived([...new Set(logRowList.map((row) => row.entry.label))]);
     const visibleLogList = $derived(logRowList.filter((row) => !selectedLabel || row.entry.label === selectedLabel));
 
+    function logStageLabel(label: string): string {
+        const stage = label.split("] ").at(-1) ?? label;
+        return `[${stage}]`;
+    }
+
     async function refreshWhileRunning(id: number): Promise<void> {
         if (pollInFlight) {
             pollAgain = true;
@@ -346,7 +351,7 @@
                                 ? 'border-primary bg-primary text-primary-foreground'
                                 : 'border-border text-secondary-foreground'}"
                             onclick={() => (selectedLabel = label)}>
-                            {label?.split("] ").at(-1) ?? "All"}
+                            {label ? logStageLabel(label) : "All"}
                         </button>
                     {/each}
                 </div>
@@ -368,7 +373,7 @@
                                             <summary
                                                 class="group flex cursor-pointer list-none gap-2.5 px-2 py-0.5 [&::-webkit-details-marker]:hidden">
                                                 <span class="hidden shrink-0 text-muted-foreground md:inline"
-                                                    >{entry.label}</span>
+                                                    >{logStageLabel(entry.label)}</span>
                                                 <ToolIcon
                                                     size={16}
                                                     class="mt-0.5 shrink-0 text-muted-foreground"
@@ -412,7 +417,7 @@
                                     {:else}
                                         <div class="group flex gap-2.5 px-2 py-0.5">
                                             <span class="hidden shrink-0 text-muted-foreground md:inline"
-                                                >{entry.label}</span>
+                                                >{logStageLabel(entry.label)}</span>
                                             <span class="min-w-0 flex-1 break-words {logLevelTextColor(entry.level)}">
                                                 {#if entry.type === "tool-error"}
                                                     <span class="block font-semibold">Error · {entry.toolName}</span>
