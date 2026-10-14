@@ -23,8 +23,8 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
     const { default: db } = await import("../../db/index.js");
     const { modelProviderTable, repositoryTable } = await import("@proval/db");
     const { encrypt, decrypt } = await import("../../util/encrypt.js");
-    const { XaiOAuthService, xaiOAuthService } = await import("./xai-oauth.service.js");
-    const { createXaiFetch, xaiBaseUrl } = await import("../../agent/llm/xai.js");
+    const { XaiOAuthError, XaiOAuthService, xaiOAuthService } = await import("./xai-oauth.service.js");
+    const { createXaiFetch, getXaiModelList, xaiBaseUrl } = await import("../../agent/llm/xai.js");
     const { ModelProviderService, createModelProviderSender } = await import("./model.service.js");
     const controller = await import("./model.controller.js");
     const { RepositoryService } = await import("../repository/repository.service.js");
@@ -449,6 +449,26 @@ if (process.env.PROVAL_XAI_TEST_CHILD !== "1") {
             await expect(request("https://evil.example/v1/responses")).rejects.toThrow("another address");
             await expect(request("https://api.x.ai@evil.example/v1/responses")).rejects.toThrow("another address");
             expect(bearerList).toHaveLength(2);
+        });
+
+        it("returns no models when xAI cannot be reached and still surfaces reconnect errors", async () => {
+            expect(
+                await getXaiModelList({
+                    timeoutSecond: 10,
+                    getAccessToken: async () => "token",
+                    fetch: async () => {
+                        throw new TypeError("fetch failed");
+                    },
+                }),
+            ).toBeNull();
+            await expect(
+                getXaiModelList({
+                    timeoutSecond: 10,
+                    getAccessToken: async () => {
+                        throw new XaiOAuthError("Reconnect this xAI provider", 403);
+                    },
+                }),
+            ).rejects.toThrow(XaiOAuthError);
         });
 
         it("respects cancellation while a shared refresh is pending", async () => {

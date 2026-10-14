@@ -112,7 +112,12 @@ export async function getXaiModelList(config: {
         return page.data.map((model) => ({ id: model.id }));
     } catch (error) {
         const original = unwrapConnectionCause(error);
-        if (original !== error) throw original;
+        if (
+            original instanceof Error &&
+            (original.name === "XaiOAuthError" || original.message.startsWith("Refusing to send xAI credentials"))
+        ) {
+            throw original;
+        }
         if (error instanceof OpenAI.APIError && [401, 403].includes(error.status ?? 0)) {
             throw new Error("xAI denied model discovery. Check the account permission or enter a model ID manually");
         }

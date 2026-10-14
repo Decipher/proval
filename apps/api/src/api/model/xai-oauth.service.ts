@@ -40,6 +40,7 @@ export class XaiOAuthError extends Error {
         public readonly status: 400 | 403 | 404 | 409 | 429 | 502 = 400,
     ) {
         super(message);
+        this.name = "XaiOAuthError";
     }
 }
 
