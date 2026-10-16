@@ -1,3 +1,4 @@
+import type { ActivityTriageJson } from "@proval/db";
 import { activityTable, repositoryTable, type ActivityLogEntryJson } from "@proval/db";
 import type {
     Activity,
@@ -177,6 +178,7 @@ export type ActivityStartInput = {
     type: Activity["type"];
     targetIid: number;
     headSha?: string | null;
+    triage?: ActivityTriageJson | null;
 };
 
 export type ActivityCompleteOptions = Pick<Activity, "inputToken" | "cachedInputToken" | "outputToken">;

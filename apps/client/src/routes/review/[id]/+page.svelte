@@ -260,6 +260,12 @@
                         <span class="text-border-strong">·</span>
                         <span class="font-mono text-secondary-foreground">{review.headSha.slice(0, 7)}</span>
                     {/if}
+                    {#if review.triage}
+                        <span class="text-border-strong">·</span>
+                        <span class="text-secondary-foreground" title={review.triage.reason}>
+                            triage {review.triage.depth} ({review.triage.rule}{review.triage.applied ? "" : ", recorded only"})
+                        </span>
+                    {/if}
                 </p>
             </div>
             <div class="shrink-0 space-y-1 text-right text-xs">

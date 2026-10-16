@@ -17,6 +17,7 @@ import { runWithActivity } from "../../api/activity/activity.runner.js";
 import { ActivityService } from "../../api/activity/activity.service.js";
 import { createModelProviderSender } from "../../api/model/model.service.js";
 import { runPullRequestReply, runPullRequestReview } from "../../agent/pull-request";
+import { triageForReview, unitBudgetForDepth } from "../../triage/triage.service.js";
 import { runIssueReplyOnOpen, runIssueReply } from "../../agent/issue";
 import { Workspace } from "../../git-provider/workspace.js";
 import { CommentService } from "../../api/comment/comment.service.js";
@@ -176,6 +177,23 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
     }
     const isFollowUpReview = hasCompleted;
 
+    // Triage decides how deep this review should be before any token is spent. The
+    // record is always written to the activity; it only changes the depth when the
+    // repository has opted in, and a skip answers like every other guard above.
+    const triage = await triageForReview({
+        provider: gitlabProvider,
+        activityService,
+        repositoryId: repository.id,
+        prIid,
+        title: (pullRequest as { title?: string }).title ?? "",
+        author: (payload as { user?: { username?: string } }).user?.username ?? "",
+        enabled: repository.prTriageEnabled,
+        logError,
+    });
+    if (triage.effectiveDepth === "skip") {
+        return new Response(JSON.stringify({ message: `Skipped: triage ${triage.record.rule}` }), { status: 200 });
+    }
+
     const isInlineReview = repository.prInlineReview;
 
     const workspace = new Workspace(gitlabProvider);
@@ -187,6 +205,7 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
             type: "pr_review",
             targetIid: prIid,
             headSha,
+            triage: triage.record,
         },
         (activityId) =>
             runPullRequestReview({
@@ -200,6 +219,7 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,
+                unitBudget: unitBudgetForDepth(triage.effectiveDepth),
             }),
     ).catch((error) => {
         logError("Pull request review failed", error);
