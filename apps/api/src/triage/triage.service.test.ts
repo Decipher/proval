@@ -3,7 +3,13 @@ import { describe, expect, test } from "bun:test";
 // No module mocks here on purpose: bun applies mock.module process wide, and a mock of
 // util/log from this file was enough to unseat another test file's mocks.
 
-import { triageForReview, unitBudgetForDepth, unitStepBudgetForDepth } from "./triage.service.js";
+import {
+    reviewBudgetForDepth,
+    reviewUnitCapFromEnv,
+    triageForReview,
+    unitBudgetForDepth,
+    unitStepBudgetForDepth,
+} from "./triage.service.js";
 import type { VersionDelta } from "./delta.js";
 
 const noDelta: VersionDelta = {
@@ -119,6 +125,27 @@ describe("unitBudgetForDepth", () => {
         expect(unitBudgetForDepth("light")).toBe(2);
         expect(unitBudgetForDepth("normal")).toBeNull();
         expect(unitBudgetForDepth("skip")).toBe(0);
+    });
+});
+
+describe("reviewUnitCapFromEnv", () => {
+    test("unset, empty or nonsense leaves the planner to decide", () => {
+        expect(reviewUnitCapFromEnv({})).toBeNull();
+        expect(reviewUnitCapFromEnv({ PROVAL_REVIEW_UNIT_CAP: "" })).toBeNull();
+        expect(reviewUnitCapFromEnv({ PROVAL_REVIEW_UNIT_CAP: "0" })).toBeNull();
+        expect(reviewUnitCapFromEnv({ PROVAL_REVIEW_UNIT_CAP: "wide" })).toBeNull();
+    });
+
+    test("a cap bounds a normal review and never raises a light one", () => {
+        expect(reviewUnitCapFromEnv({ PROVAL_REVIEW_UNIT_CAP: "6" })).toBe(6);
+        expect(unitBudgetForDepth("normal", 6)).toBe(6);
+        expect(unitBudgetForDepth("light", 6)).toBe(2);
+        expect(unitBudgetForDepth("light", 1)).toBe(1);
+        expect(reviewBudgetForDepth("normal", { PROVAL_REVIEW_UNIT_CAP: "6" })).toEqual({
+            unitBudget: 6,
+            unitStepBudget: null,
+        });
+        expect(reviewBudgetForDepth("normal", {})).toEqual({ unitBudget: null, unitStepBudget: null });
     });
 });
 
