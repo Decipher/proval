@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 // No module mocks here on purpose: bun applies mock.module process wide, and a mock of
 // util/log from this file was enough to unseat another test file's mocks.
 
-import { triageForReview, unitBudgetForDepth } from "./triage.service.js";
+import { triageForReview, unitBudgetForDepth, unitStepBudgetForDepth } from "./triage.service.js";
 import type { VersionDelta } from "./delta.js";
 
 const noDelta: VersionDelta = {
@@ -187,5 +187,13 @@ describe("unitBudgetForDepth", () => {
             decision: null,
         });
         expect(result.record.decision).toBeUndefined();
+    });
+});
+
+describe("unitStepBudgetForDepth", () => {
+    test("light caps each unit's steps, normal leaves the loop default, skip has none", () => {
+        expect(unitStepBudgetForDepth("light")).toBe(24);
+        expect(unitStepBudgetForDepth("normal")).toBeNull();
+        expect(unitStepBudgetForDepth("skip")).toBe(0);
     });
 });

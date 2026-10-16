@@ -29,7 +29,12 @@ export type TriageRule =
 export interface TriageSettings {
     /** A delta with no more lines than this is a light review. */
     smallDeltaLineCount: number;
-    /** Whether a rule may skip a review outright; otherwise skip is downgraded to light. */
+    /**
+     * Whether a rule may skip a review outright; otherwise skip is downgraded to light.
+     * Only rebase-only produces a skip, and a delta with no changed hunk cannot carry a
+     * new finding, so the default is on. Off is for an instance that wants a note on
+     * every push regardless.
+     */
     allowSkip: boolean;
     /** Author usernames whose changes are mechanical: bots and release tooling. */
     mechanicalAuthorList: string[];
@@ -63,7 +68,7 @@ export interface TriageRecord {
 
 export const DEFAULT_TRIAGE_SETTINGS: TriageSettings = {
     smallDeltaLineCount: 60,
-    allowSkip: false,
+    allowSkip: true,
     mechanicalAuthorList: ["renovate", "renovate-bot", "dependabot", "dependabot[bot]", "github-actions[bot]"],
 };
 
