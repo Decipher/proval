@@ -61,19 +61,38 @@ export function unitStepBudgetForDepth(depth: TriageDepth): number | null {
 }
 
 /** Both budgets a depth implies, shaped to spread into the review params. */
-export function reviewBudgetForDepth(depth: TriageDepth): { unitBudget: number | null; unitStepBudget: number | null } {
-    return { unitBudget: unitBudgetForDepth(depth), unitStepBudget: unitStepBudgetForDepth(depth) };
+export function reviewBudgetForDepth(
+    depth: TriageDepth,
+    env: Record<string, string | undefined> = process.env,
+): { unitBudget: number | null; unitStepBudget: number | null } {
+    return {
+        unitBudget: unitBudgetForDepth(depth, reviewUnitCapFromEnv(env)),
+        unitStepBudget: unitStepBudgetForDepth(depth),
+    };
+}
+
+/**
+ * The most review units any review may have, from PROVAL_REVIEW_UNIT_CAP. Unset means
+ * the planner decides, which is how it has always been. The planner reads width off
+ * the change, and on a wide one it can choose far more units than any step budget
+ * can carry: one 30 file merge request was split into 14, the shared step budget ran
+ * out before a single hand off, and 9M input tokens bought nothing. A cap turns that
+ * into a review that finishes.
+ */
+export function reviewUnitCapFromEnv(env: Record<string, string | undefined> = process.env): number | null {
+    const value = Number.parseInt((env.PROVAL_REVIEW_UNIT_CAP ?? "").trim(), 10);
+    return Number.isFinite(value) && value > 0 ? value : null;
 }
 
 /** How many review units a depth allows the planner. Null means the planner decides. */
-export function unitBudgetForDepth(depth: TriageDepth): number | null {
+export function unitBudgetForDepth(depth: TriageDepth, cap: number | null = null): number | null {
     switch (depth) {
         case "light":
-            return 2;
+            return cap === null ? 2 : Math.min(2, cap);
         case "skip":
             return 0;
         case "normal":
-            return null;
+            return cap;
     }
 }
 
