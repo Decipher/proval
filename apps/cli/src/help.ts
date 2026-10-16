@@ -16,7 +16,7 @@ Repositories
   proval repo set <repo> <field> <value>
 
 Reviews
-  proval review trigger <repo> <iid> [--force]
+  proval review trigger <repo> <iid> [--force]   (needs an API route that is not released yet, see issue #67)
 
 Activities
   proval activity list [--status <status>] [--limit <n>]
@@ -26,8 +26,7 @@ Activities
   proval activity retry <id>
 
 Tokens
-  proval token list
-  proval token revoke <id>
+  proval token                                   (explains why tokens are managed in the dashboard)
 
 Instance
   proval settings get
