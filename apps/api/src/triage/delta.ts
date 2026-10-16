@@ -73,14 +73,27 @@ export function countDeltaLines(
 ): { additions: number; deletions: number } {
     let additions = 0;
     let deletions = 0;
-    const count = (body: string, sign: "+" | "-") => body.split("\n").filter((l) => l.startsWith(sign)).length;
+    const lines = (body: string, sign: "+" | "-") => body.split("\n").filter((l) => l.startsWith(sign));
+    // Lines of the new version's diff that the old version's did not have, per sign,
+    // counted as a multiset so an in place rewrite that keeps the line count still
+    // reads as churn rather than as nothing. Enough to tell a two line fix from a
+    // two thousand line one.
+    const newLines = (afterList: string[], beforeList: string[]) => {
+        const seen = new Map<string, number>();
+        for (const line of beforeList) seen.set(line, (seen.get(line) ?? 0) + 1);
+        let fresh = 0;
+        for (const line of afterList) {
+            const left = seen.get(line) ?? 0;
+            if (left > 0) seen.set(line, left - 1);
+            else fresh++;
+        }
+        return fresh;
+    };
     for (const path of delta.touched) {
         const beforeBody = before[path] ?? "";
         const afterBody = after[path] ?? "";
-        // Lines the new version adds that the old did not, and vice versa, approximated
-        // per file: enough to tell a two line fix from a two thousand line one.
-        additions += Math.max(0, count(afterBody, "+") - count(beforeBody, "+"));
-        deletions += Math.max(0, count(afterBody, "-") - count(beforeBody, "-"));
+        additions += newLines(lines(afterBody, "+"), lines(beforeBody, "+"));
+        deletions += newLines(lines(afterBody, "-"), lines(beforeBody, "-"));
     }
     return { additions, deletions };
 }
