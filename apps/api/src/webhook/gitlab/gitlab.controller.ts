@@ -17,7 +17,7 @@ import { runWithActivity } from "../../api/activity/activity.runner.js";
 import { ActivityService } from "../../api/activity/activity.service.js";
 import { createModelProviderSender } from "../../api/model/model.service.js";
 import { runPullRequestReply, runPullRequestReview } from "../../agent/pull-request";
-import { triageForReview, unitBudgetForDepth, unitStepBudgetForDepth } from "../../triage/triage.service.js";
+import { reviewBudgetForDepth, triageForReview } from "../../triage/triage.service.js";
 import { decisionProviderFromEnv } from "../../triage/decision.js";
 import { runIssueReplyOnOpen, runIssueReply } from "../../agent/issue";
 import { Workspace } from "../../git-provider/workspace.js";
@@ -181,14 +181,17 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
     // Triage decides how deep this review should be before any token is spent. The
     // record is always written to the activity; it only changes the depth when the
     // repository has opted in, and a skip answers like every other guard above.
+    // The webhook's top level user is whoever triggered the event, not the merge
+    // request's author, and the mechanical-author rule needs the latter.
+    const detail = await gitlabProvider.fetchPullRequestDetail(prIid);
     const triage = await triageForReview({
         provider: gitlabProvider,
         activityService,
         repositoryId: repository.id,
         prIid,
-        title: (pullRequest as { title?: string }).title ?? "",
-        description: (pullRequest as { description?: string }).description ?? null,
-        author: (payload as { user?: { username?: string } }).user?.username ?? "",
+        title: (pullRequest as { title?: string }).title ?? detail.title,
+        description: (pullRequest as { description?: string }).description ?? detail.description,
+        author: detail.author,
         enabled: repository.prTriageEnabled,
         decision: decisionProviderFromEnv(),
         logError,
@@ -222,8 +225,7 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,
-                unitBudget: unitBudgetForDepth(triage.effectiveDepth),
-                unitStepBudget: unitStepBudgetForDepth(triage.effectiveDepth),
+                ...reviewBudgetForDepth(triage.effectiveDepth),
             }),
     ).catch((error) => {
         logError("Pull request review failed", error);

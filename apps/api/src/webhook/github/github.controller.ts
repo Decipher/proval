@@ -9,7 +9,7 @@ import { runWithActivity } from "../../api/activity/activity.runner.js";
 import { ActivityService } from "../../api/activity/activity.service.js";
 import { createModelProviderSender } from "../../api/model/model.service.js";
 import { runPullRequestReply, runPullRequestReview } from "../../agent/pull-request";
-import { triageForReview, unitBudgetForDepth, unitStepBudgetForDepth } from "../../triage/triage.service.js";
+import { reviewBudgetForDepth, triageForReview } from "../../triage/triage.service.js";
 import { decisionProviderFromEnv } from "../../triage/decision.js";
 import { runIssueReplyOnOpen, runIssueReply } from "../../agent/issue";
 import { Workspace } from "../../git-provider/workspace.js";
@@ -234,8 +234,7 @@ async function handlePullRequestWebhook(
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,
-                unitBudget: unitBudgetForDepth(triage.effectiveDepth),
-                unitStepBudget: unitStepBudgetForDepth(triage.effectiveDepth),
+                ...reviewBudgetForDepth(triage.effectiveDepth),
             }),
     ).catch((error) => {
         logError("Pull request review failed", error);

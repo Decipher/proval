@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { compareVersionDiffs, normaliseVersionDiffs, type VersionDiff } from "./delta.js";
+import { compareVersionDiffs, normaliseVersionDiffs, type VersionDiff, countDeltaLines } from "./delta.js";
 
 // A hunk's body is the same whether the file sits at line 10 or line 40 of a rebased
 // branch. Only the @@ header and the index line change, so those are what we drop.
@@ -68,5 +68,12 @@ describe("compareVersionDiffs", () => {
         const before = normaliseVersionDiffs([file("src/a.ts", "+1"), file("README.md", "+old")]);
         const after = normaliseVersionDiffs([file("src/a.ts", "+1"), file("README.md", "+new")]);
         expect(compareVersionDiffs(before, after).touched).toEqual(["README.md"]);
+    });
+
+    test("countDeltaLines counts churn, so an in place rewrite that keeps the line count is not zero", () => {
+        const before = { "src/a.ts": "+const a = 1;\n+const b = 2;\n-const old = 0;" };
+        const after = { "src/a.ts": "+const a = 10;\n+const b = 2;\n-const older = 0;" };
+        const delta = { unchanged: false, added: [], removed: [], changed: ["src/a.ts"], touched: ["src/a.ts"] };
+        expect(countDeltaLines(before, after, delta)).toEqual({ additions: 1, deletions: 1 });
     });
 });

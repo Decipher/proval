@@ -60,6 +60,11 @@ export function unitStepBudgetForDepth(depth: TriageDepth): number | null {
     }
 }
 
+/** Both budgets a depth implies, shaped to spread into the review params. */
+export function reviewBudgetForDepth(depth: TriageDepth): { unitBudget: number | null; unitStepBudget: number | null } {
+    return { unitBudget: unitBudgetForDepth(depth), unitStepBudget: unitStepBudgetForDepth(depth) };
+}
+
 /** How many review units a depth allows the planner. Null means the planner decides. */
 export function unitBudgetForDepth(depth: TriageDepth): number | null {
     switch (depth) {
