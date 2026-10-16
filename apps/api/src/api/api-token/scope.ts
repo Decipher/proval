@@ -28,6 +28,7 @@ const scopeRuleList: ScopeRule[] = [
     { method: "GET", pattern: /^\/activity(\/\d+)?$/, scope: "activity:read" },
     { method: "GET", pattern: /^\/activity\/summary$/, scope: "activity:read" },
     { method: "GET", pattern: /^\/activity\/\d+\/log$/, scope: "activity:read" },
+    { method: "GET", pattern: /^\/activity\/\d+\/status$/, scope: "activity:read" },
     { method: "POST", pattern: /^\/activity\/\d+\/(retry|cancel)$/, scope: "activity:write" },
 
     { method: "GET", pattern: /^\/model-provider(\/\d+)?$/, scope: "model:read" },
