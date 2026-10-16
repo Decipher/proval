@@ -40,6 +40,14 @@ describe("findRequiredScope", () => {
         expect(findRequiredScope("GET", "/access/test")).toBeNull();
     });
 
+    test("covers every activity read route, including the status poll a client waits on", () => {
+        expect(findRequiredScope("GET", "/activity")).toBe("activity:read");
+        expect(findRequiredScope("GET", "/activity/12")).toBe("activity:read");
+        expect(findRequiredScope("GET", "/activity/12/log")).toBe("activity:read");
+        expect(findRequiredScope("GET", "/activity/12/status")).toBe("activity:read");
+        expect(findRequiredScope("POST", "/activity/12/cancel")).toBe("activity:write");
+    });
+
     test("returns null for a route no rule covers, so the caller denies it", () => {
         expect(findRequiredScope("GET", "/github/app")).toBeNull();
         expect(findRequiredScope("POST", "/github/installation")).toBeNull();
