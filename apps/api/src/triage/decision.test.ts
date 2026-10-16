@@ -102,14 +102,14 @@ describe("buildTriageState", () => {
 });
 
 describe("compactAnswers", () => {
-    test("keeps the value and confidence of each answer and drops the probability tables", () => {
+    test("keeps the value and confidence of each answer, labels a score by its nearest level, and drops the probability tables", () => {
         const answers = compactAnswers({
             mechanical: { type: "noul", noul: 0.97 },
             risk_area: { type: "choice", choice: "docs", confidence: 1, probabilities: { docs: 1, code: 0 } },
             review_depth: {
                 type: "score",
-                score: 0,
-                confidence: 1,
+                score: 1.2,
+                confidence: 0.64,
                 legend: { "0": "glance", "1": "normal", "2": "deep" },
                 probabilities: { "0": 1 },
             },
@@ -119,7 +119,7 @@ describe("compactAnswers", () => {
         expect(answers).toEqual({
             mechanical: { type: "noul", value: 0.97 },
             risk_area: { type: "choice", value: "docs", confidence: 1 },
-            review_depth: { type: "score", value: "glance", level: 0, confidence: 1 },
+            review_depth: { type: "score", value: "normal", level: 1.2, confidence: 0.64 },
         });
     });
 });

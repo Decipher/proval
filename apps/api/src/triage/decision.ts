@@ -209,9 +209,11 @@ export function compactAnswers(raw: Record<string, Record<string, unknown>>): De
                 if (typeof answer.choice === "string") out[key] = { type: "choice", value: answer.choice, confidence };
                 break;
             case "score": {
+                // The score is the expected level, a real number such as 1.2, so the
+                // label is the nearest level's; the raw score is kept as the level.
                 if (typeof answer.score !== "number") break;
                 const legend = (answer.legend ?? {}) as Record<string, string>;
-                const label = legend[String(answer.score)];
+                const label = legend[String(Math.round(answer.score))];
                 out[key] = {
                     type: "score",
                     value: typeof label === "string" ? label : String(answer.score),
