@@ -2,7 +2,14 @@ import type { ActivityTriageJson } from "@proval/db";
 import type { GitProvider } from "../git-provider/types.js";
 import type { ActivityService } from "../api/activity/activity.service.js";
 import { hasVersionDelta } from "./capability.js";
-import { DEFAULT_TRIAGE_SETTINGS, triagePullRequest, type TriageDepth, type TriageSettings } from "./rules.js";
+import { askDecisions, buildTriageState, TRIAGE_QUESTION_SET, type DecisionProviderConfig } from "./decision.js";
+import {
+    DEFAULT_TRIAGE_SETTINGS,
+    triagePullRequest,
+    type TriageDepth,
+    type TriageInput,
+    type TriageSettings,
+} from "./rules.js";
 
 export interface TriageForReviewInput {
     provider: GitProvider;
@@ -10,10 +17,18 @@ export interface TriageForReviewInput {
     repositoryId: number;
     prIid: number;
     title: string;
+    description?: string | null;
     author: string;
     /** Whether the repository has opted in to acting on the result. */
     enabled: boolean;
     settings?: Partial<TriageSettings>;
+    /**
+     * A decision provider to ask the triage questions of, or null for rules alone.
+     * Its answers are recorded on the activity and never change the depth.
+     */
+    decision?: DecisionProviderConfig | null;
+    /** Injected for tests; the decision call is the only network access here. */
+    fetchImpl?: typeof fetch;
     /**
      * Where a failure is reported. Injected rather than imported because util/log pulls
      * in the activity service and its database, which must not happen on this module's
@@ -36,7 +51,7 @@ export function unitBudgetForDepth(depth: TriageDepth): number | null {
             return 2;
         case "skip":
             return 0;
-        default:
+        case "normal":
             return null;
     }
 }
@@ -51,23 +66,23 @@ export function unitBudgetForDepth(depth: TriageDepth): number | null {
  */
 export async function triageForReview(input: TriageForReviewInput): Promise<TriageForReviewResult> {
     const settings: TriageSettings = { ...DEFAULT_TRIAGE_SETTINGS, ...(input.settings ?? {}) };
+    const logError = input.logError ?? ((message: string, cause: unknown) => console.error(message, cause));
     let record: ActivityTriageJson;
+    let ruleInput: TriageInput | null = null;
     try {
         if (!hasVersionDelta(input.provider)) {
             // No versions API: the rules still run on the whole merge request from what
             // the provider can tell us, which for these providers is nothing yet.
-            record = withApplied(
-                triagePullRequest({
-                    title: input.title,
-                    author: input.author,
-                    filePathList: [],
-                    additions: 0,
-                    deletions: 0,
-                    delta: null,
-                    settings,
-                }),
-                input.enabled,
-            );
+            ruleInput = {
+                title: input.title,
+                author: input.author,
+                filePathList: [],
+                additions: 0,
+                deletions: 0,
+                delta: null,
+                settings,
+            };
+            record = withApplied(triagePullRequest(ruleInput), input.enabled);
         } else {
             const summary = await input.provider.fetchPullRequestVersionSummary(input.prIid);
             const reviewedHeadSha = await input.activityService.findLastReviewedHeadSha(
@@ -77,24 +92,19 @@ export async function triageForReview(input: TriageForReviewInput): Promise<Tria
             const delta = reviewedHeadSha
                 ? await input.provider.fetchPullRequestVersionDelta(input.prIid, reviewedHeadSha)
                 : null;
-            record = withApplied(
-                triagePullRequest({
-                    title: input.title,
-                    author: input.author,
-                    filePathList: summary.filePathList,
-                    additions: summary.additions,
-                    deletions: summary.deletions,
-                    delta,
-                    settings,
-                }),
-                input.enabled,
-            );
+            ruleInput = {
+                title: input.title,
+                author: input.author,
+                filePathList: summary.filePathList,
+                additions: summary.additions,
+                deletions: summary.deletions,
+                delta,
+                settings,
+            };
+            record = withApplied(triagePullRequest(ruleInput), input.enabled);
         }
     } catch (error) {
-        (input.logError ?? ((message, cause) => console.error(message, cause)))(
-            "Triage failed, treating the review as normal",
-            error,
-        );
+        logError("Triage failed, treating the review as normal", error);
         record = {
             depth: "normal",
             rule: "default",
@@ -103,7 +113,50 @@ export async function triageForReview(input: TriageForReviewInput): Promise<Tria
             evidence: { hadDelta: false, fileCount: 0, lineCount: 0, filePathList: [] },
         };
     }
+    if (input.decision && ruleInput) {
+        record.decision = await askTriageDecision(
+            input.decision,
+            ruleInput,
+            input.description,
+            input.fetchImpl,
+            logError,
+        );
+    }
     return { record, effectiveDepth: record.applied ? record.depth : "normal" };
+}
+
+/**
+ * Asks the provider the triage questions and returns what to record. A failure is
+ * recorded as such and nothing else: the depth above was already decided by the rules,
+ * so the worst a broken provider can do is cost one timeout per webhook.
+ */
+async function askTriageDecision(
+    config: DecisionProviderConfig,
+    ruleInput: TriageInput,
+    description: string | null | undefined,
+    fetchImpl: typeof fetch | undefined,
+    logError: (message: string, error: unknown) => void,
+): Promise<NonNullable<ActivityTriageJson["decision"]>> {
+    const started = Date.now();
+    try {
+        const state = buildTriageState({ ...ruleInput, description });
+        const result = await askDecisions(config, state, TRIAGE_QUESTION_SET, fetchImpl);
+        return {
+            baseUrl: config.baseUrl,
+            model: result.model,
+            latencyMs: result.latencyMs,
+            answers: result.answers,
+            usage: result.usage,
+        };
+    } catch (error) {
+        logError("Decision provider failed at triage, recording the error", error);
+        return {
+            baseUrl: config.baseUrl,
+            model: config.model,
+            latencyMs: Date.now() - started,
+            error: error instanceof Error ? error.message : String(error),
+        };
+    }
 }
 
 function withApplied(record: Omit<ActivityTriageJson, "applied">, enabled: boolean): ActivityTriageJson {

@@ -138,6 +138,22 @@
         return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
     }
 
+    type TriageDecision = NonNullable<NonNullable<ActivityResponse["triage"]>["decision"]>;
+
+    // The decision provider's answers are recorded, not acted on, so the line says
+    // what the model thought and the tooltip says which model and how long it took.
+    function decisionSummary(decision: TriageDecision): string {
+        if (decision.error) return "decision unavailable";
+        const parts = Object.entries(decision.answers ?? {}).map(([key, answer]) =>
+            answer.type === "noul" ? `${key} ${answer.value.toFixed(2)}` : `${key} ${answer.value}`,
+        );
+        return parts.length ? `decision: ${parts.join(", ")}` : "decision: no answers";
+    }
+
+    function decisionTitle(decision: TriageDecision): string {
+        return decision.error ? decision.error : `${decision.model}, ${decision.latencyMs} ms, recorded only`;
+    }
+
     function logLevelTextColor(level: ActivityLogEntry["level"]): string {
         switch (level) {
             case "error":
@@ -264,6 +280,12 @@
                         <span class="text-border-strong">·</span>
                         <span class="text-secondary-foreground" title={review.triage.reason}>
                             triage {review.triage.depth} ({review.triage.rule}{review.triage.applied ? "" : ", recorded only"})
+                        </span>
+                    {/if}
+                    {#if review.triage?.decision}
+                        <span class="text-border-strong">·</span>
+                        <span class="text-secondary-foreground" title={decisionTitle(review.triage.decision)}>
+                            {decisionSummary(review.triage.decision)}
                         </span>
                     {/if}
                 </p>

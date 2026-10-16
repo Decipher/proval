@@ -182,6 +182,27 @@ export const repositoryTable = sqliteTable(
     (table) => [unique().on(table.gitProviderRepositoryId, table.gitProviderAccessId)],
 );
 
+/**
+ * What a decision provider (Jev protocol: hosted TypeSafe or a self-hosted laya-serve)
+ * answered at triage. Recorded beside the rule outcome and never acted on, so every
+ * review becomes a labelled example for a later evaluation of the model against the
+ * rules on this instance.
+ */
+export type ActivityTriageDecisionJson = {
+    baseUrl: string;
+    model: string;
+    latencyMs: number;
+    answers?: Record<
+        string,
+        | { type: "noul"; value: number }
+        | { type: "choice"; value: string; confidence: number }
+        | { type: "score"; value: string; level: number; confidence: number }
+    >;
+    usage?: { inputTokens: number; outputTokens: number } | null;
+    /** Set when the call failed; the triage depth is unaffected either way. */
+    error?: string;
+};
+
 export type ActivityTriageJson = {
     depth: "skip" | "light" | "normal";
     rule: string;
@@ -194,6 +215,7 @@ export type ActivityTriageJson = {
         lineCount: number;
         filePathList: string[];
     };
+    decision?: ActivityTriageDecisionJson;
 };
 
 export type ActivityLogEntryJson = {

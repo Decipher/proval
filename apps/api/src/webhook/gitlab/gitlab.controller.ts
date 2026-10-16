@@ -18,6 +18,7 @@ import { ActivityService } from "../../api/activity/activity.service.js";
 import { createModelProviderSender } from "../../api/model/model.service.js";
 import { runPullRequestReply, runPullRequestReview } from "../../agent/pull-request";
 import { triageForReview, unitBudgetForDepth } from "../../triage/triage.service.js";
+import { decisionProviderFromEnv } from "../../triage/decision.js";
 import { runIssueReplyOnOpen, runIssueReply } from "../../agent/issue";
 import { Workspace } from "../../git-provider/workspace.js";
 import { CommentService } from "../../api/comment/comment.service.js";
@@ -186,8 +187,10 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
         repositoryId: repository.id,
         prIid,
         title: (pullRequest as { title?: string }).title ?? "",
+        description: (pullRequest as { description?: string }).description ?? null,
         author: (payload as { user?: { username?: string } }).user?.username ?? "",
         enabled: repository.prTriageEnabled,
+        decision: decisionProviderFromEnv(),
         logError,
     });
     if (triage.effectiveDepth === "skip") {

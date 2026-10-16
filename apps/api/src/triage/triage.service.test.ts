@@ -120,4 +120,72 @@ describe("unitBudgetForDepth", () => {
         expect(unitBudgetForDepth("normal")).toBeNull();
         expect(unitBudgetForDepth("skip")).toBe(0);
     });
+
+    test("a decision provider's answers are recorded beside the rule outcome and do not change the depth", async () => {
+        let posted: Record<string, unknown> | null = null;
+        const fetchImpl = (async (_url: string | URL | Request, init?: RequestInit) => {
+            posted = JSON.parse(String(init?.body));
+            return new Response(
+                JSON.stringify({
+                    model: "jev-1.13.0",
+                    answers: { mechanical: { type: "noul", noul: 0.97 } },
+                    usage: { input_tokens: 10, output_tokens: 2 },
+                }),
+                { status: 200 },
+            );
+        }) as typeof fetch;
+        const result = await triageForReview({
+            ...base,
+            description: "the why",
+            provider: fakeProvider({ delta: noDelta }),
+            activityService: activityService("old"),
+            enabled: true,
+            settings: { allowSkip: true },
+            decision: { baseUrl: "http://decider", apiKey: null, model: "jev-latest", timeoutMs: 1000 },
+            fetchImpl,
+        });
+        expect(result.record.rule).toBe("rebase-only");
+        expect(result.effectiveDepth).toBe("skip");
+        expect(result.record.decision).toEqual({
+            baseUrl: "http://decider",
+            model: "jev-1.13.0",
+            latencyMs: expect.any(Number),
+            answers: { mechanical: { type: "noul", value: 0.97 } },
+            usage: { inputTokens: 10, outputTokens: 2 },
+        });
+        const state = (posted as unknown as { state: Record<string, unknown> }).state;
+        expect(state.description).toBe("the why");
+        expect(state.since_last_review).toMatchObject({ unchanged: true });
+    });
+
+    test("a failing decision provider is recorded as an error and the rules' depth stands", async () => {
+        const errors: string[] = [];
+        const fetchImpl = (async (_url: string | URL | Request) =>
+            new Response("down", { status: 503 })) as typeof fetch;
+        const result = await triageForReview({
+            ...base,
+            provider: fakeProvider({ delta: noDelta }),
+            activityService: activityService("old"),
+            enabled: false,
+            decision: { baseUrl: "http://decider", apiKey: "k", model: "jev-latest", timeoutMs: 1000 },
+            fetchImpl,
+            logError: (message) => errors.push(message),
+        });
+        expect(result.record.rule).toBe("rebase-only");
+        expect(result.effectiveDepth).toBe("normal");
+        expect(result.record.decision?.error).toContain("returned 503");
+        expect(result.record.decision?.answers).toBeUndefined();
+        expect(errors).toHaveLength(1);
+    });
+
+    test("without a decision provider the record carries no decision", async () => {
+        const result = await triageForReview({
+            ...base,
+            provider: fakeProvider({}),
+            activityService: activityService(null),
+            enabled: false,
+            decision: null,
+        });
+        expect(result.record.decision).toBeUndefined();
+    });
 });

@@ -10,6 +10,7 @@ import { ActivityService } from "../../api/activity/activity.service.js";
 import { createModelProviderSender } from "../../api/model/model.service.js";
 import { runPullRequestReply, runPullRequestReview } from "../../agent/pull-request";
 import { triageForReview, unitBudgetForDepth } from "../../triage/triage.service.js";
+import { decisionProviderFromEnv } from "../../triage/decision.js";
 import { runIssueReplyOnOpen, runIssueReply } from "../../agent/issue";
 import { Workspace } from "../../git-provider/workspace.js";
 import { CommentService } from "../../api/comment/comment.service.js";
@@ -198,8 +199,10 @@ async function handlePullRequestWebhook(
         repositoryId: repository.id,
         prIid: prNumber,
         title: (payload.pull_request as { title?: string } | undefined)?.title ?? "",
+        description: (payload.pull_request as { body?: string } | undefined)?.body ?? null,
         author: payload.pull_request?.user?.login ?? "",
         enabled: repository.prTriageEnabled,
+        decision: decisionProviderFromEnv(),
         logError,
     });
     if (triage.effectiveDepth === "skip") {
