@@ -29,6 +29,22 @@ export interface TriageForReviewResult {
     effectiveDepth: TriageDepth;
 }
 
+/**
+ * How many model round trips each review unit's sub agent may spend. Null means the
+ * loop's own default. A light review caps this as well as the unit count, because a
+ * cap on breadth alone leaves two sub agents free to read as much as five would have.
+ */
+export function unitStepBudgetForDepth(depth: TriageDepth): number | null {
+    switch (depth) {
+        case "light":
+            return 24;
+        case "skip":
+            return 0;
+        case "normal":
+            return null;
+    }
+}
+
 /** How many review units a depth allows the planner. Null means the planner decides. */
 export function unitBudgetForDepth(depth: TriageDepth): number | null {
     switch (depth) {
@@ -36,7 +52,7 @@ export function unitBudgetForDepth(depth: TriageDepth): number | null {
             return 2;
         case "skip":
             return 0;
-        default:
+        case "normal":
             return null;
     }
 }

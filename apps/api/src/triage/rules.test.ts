@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { triagePullRequest, type TriageInput } from "./rules.js";
+import { DEFAULT_TRIAGE_SETTINGS, triagePullRequest, type TriageInput } from "./rules.js";
 
 const base: TriageInput = {
     title: "feat: add the thing",
@@ -25,6 +25,15 @@ describe("triagePullRequest", () => {
         });
         expect(record.depth).toBe("skip");
         expect(record.rule).toBe("rebase-only");
+    });
+
+    test("the default settings allow the rebase-only skip, since an unchanged delta has nothing to find", () => {
+        const record = triagePullRequest({
+            ...base,
+            delta: { unchanged: true, added: [], removed: [], changed: [], touched: [] },
+            settings: DEFAULT_TRIAGE_SETTINGS,
+        });
+        expect(record.depth).toBe("skip");
     });
 
     test("skip is downgraded to light when the repository does not allow skipping", () => {
