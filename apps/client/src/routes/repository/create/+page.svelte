@@ -186,6 +186,7 @@
                     prTriageEnabled: false,
                     userPrompt: null,
                     reviewPersonaList: null,
+                    prPersonaByTriage: false,
                     prReplyEnabled: true,
                     prMentionOnly: false,
                     issueEnabled: true,

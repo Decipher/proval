@@ -284,6 +284,16 @@
                                 : ", recorded only"})
                         </span>
                     {/if}
+                    {#if review.triage?.personaList !== undefined}
+                        <span class="text-border-strong">·</span>
+                        <span class="text-secondary-foreground" title={review.triage.personaReason ?? ""}>
+                            personas {review.triage.personaList === null
+                                ? "all"
+                                : review.triage.personaList.length === 0
+                                  ? "none"
+                                  : review.triage.personaList.join(", ")}{review.triage.personaApplied ? "" : " (recorded only)"}
+                        </span>
+                    {/if}
                     {#if review.triage?.decision}
                         <span class="text-border-strong">·</span>
                         <span class="text-secondary-foreground" title={decisionTitle(review.triage.decision)}>

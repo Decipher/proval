@@ -224,3 +224,55 @@ describe("unitStepBudgetForDepth", () => {
         expect(unitStepBudgetForDepth("skip")).toBe(0);
     });
 });
+
+describe("triageForReview personas", () => {
+    const light = () => ({
+        ...base,
+        provider: fakeProvider({
+            delta: {
+                ...noDelta,
+                unchanged: false,
+                changed: ["README.md"],
+                touched: ["README.md"],
+                additions: 3,
+                deletions: 1,
+            },
+        }),
+        activityService: activityService("old"),
+    });
+
+    test("the choice is always recorded, and only used when the repository lets triage choose", async () => {
+        const recordedOnly = await triageForReview({
+            ...light(),
+            enabled: true,
+            personaByTriage: false,
+            allowedPersonaList: null,
+        });
+        expect(recordedOnly.record.rule).toBe("docs-only");
+        expect(recordedOnly.record.personaList).toEqual(["correctness"]);
+        expect(recordedOnly.record.personaApplied).toBe(false);
+        expect(recordedOnly.effectivePersonaList).toBeNull();
+
+        const applied = await triageForReview({
+            ...light(),
+            enabled: true,
+            personaByTriage: true,
+            allowedPersonaList: ["correctness", "security", "testing"],
+        });
+        expect(applied.record.personaApplied).toBe(true);
+        expect(applied.effectivePersonaList).toEqual(["correctness"]);
+    });
+
+    test("with act on triage off, the depth is normal and the personas follow the normal path", async () => {
+        const result = await triageForReview({
+            ...light(),
+            enabled: false,
+            personaByTriage: true,
+            allowedPersonaList: ["security"],
+        });
+        expect(result.effectiveDepth).toBe("normal");
+        expect(result.record.personaReason).toBe("normal review, every enabled persona");
+        expect(result.record.personaApplied).toBe(false);
+        expect(result.effectivePersonaList).toEqual(["security"]);
+    });
+});

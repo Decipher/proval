@@ -225,6 +225,8 @@ const handleForgejoPullRequestWebhook = async (
         author: pr.user?.login ?? "",
         enabled: repository.prTriageEnabled,
         decision: decisionProviderFromEnv(),
+        allowedPersonaList: repository.reviewPersonaList ?? null,
+        personaByTriage: repository.prPersonaByTriage,
         logError,
     });
     if (triage.effectiveDepth === "skip") {
@@ -250,7 +252,7 @@ const handleForgejoPullRequestWebhook = async (
                 isInlineReview: repository.prInlineReview,
                 language: repository.language,
                 userPrompt: repository.userPrompt,
-                personaList: repository.reviewPersonaList ?? null,
+                personaList: triage.effectivePersonaList,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,

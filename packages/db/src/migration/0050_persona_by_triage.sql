@@ -1,0 +1,1 @@
+ALTER TABLE `repository` ADD `pr_persona_by_triage` integer DEFAULT false NOT NULL;

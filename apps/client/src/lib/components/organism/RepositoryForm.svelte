@@ -45,6 +45,7 @@
         prTriageEnabled: boolean;
         userPrompt: string | null;
         reviewPersonaList: ReviewPersonaKey[] | null;
+        prPersonaByTriage: boolean;
         prReplyEnabled: boolean;
         prMentionOnly: boolean;
         issueEnabled: boolean;
@@ -154,6 +155,7 @@
     let prReviewOnPush = $state<PrReviewOnPush>(config.prReviewOnPush);
     let prIgnoreDraft = $state<boolean>(config.prIgnoreDraft);
     let prTriageEnabled = $state<boolean>(config.prTriageEnabled);
+    let prPersonaByTriage = $state<boolean>(config.prPersonaByTriage);
     let userPrompt = $state<string>(config.userPrompt ?? "");
     // Null on the repository means every persona; the form shows that as all switches on.
     let personaEnabled = $state<Record<ReviewPersonaKey, boolean>>(
@@ -343,6 +345,7 @@
             prTriageEnabled,
             userPrompt: userPrompt.trim() || null,
             reviewPersonaList: personaListForSave,
+            prPersonaByTriage,
             prReplyEnabled,
             prMentionOnly,
             issueEnabled,
@@ -566,6 +569,14 @@
         {#if enabledPersonaList.length === 1}
             <Description>At least one persona stays on.</Description>
         {/if}
+        <div class="flex items-center justify-between gap-4 border-t border-border pt-4">
+            <div>
+                <p class="text-sm font-medium text-foreground">Let triage choose</p>
+                <Description
+                    >Triage picks a subset of the enabled personas per pull request: a docs or test change gets one or two, a change a decision provider rates as risky gets them all. Needs "Act on triage".</Description>
+            </div>
+            <ToggleSwitch bind:checked={prPersonaByTriage} disabled={!prTriageEnabled} />
+        </div>
     </Card>
 
     <Card spaceY>

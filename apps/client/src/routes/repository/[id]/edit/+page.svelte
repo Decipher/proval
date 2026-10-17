@@ -123,6 +123,7 @@
             prTriageEnabled: data.repository.prTriageEnabled,
             userPrompt: data.repository.userPrompt,
             reviewPersonaList: data.repository.reviewPersonaList ?? null,
+            prPersonaByTriage: data.repository.prPersonaByTriage,
             prReplyEnabled: data.repository.prReplyEnabled,
             prMentionOnly: data.repository.prMentionOnly,
             issueEnabled: data.repository.issueEnabled,

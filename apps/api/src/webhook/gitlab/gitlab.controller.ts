@@ -194,6 +194,8 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
         author: detail.author,
         enabled: repository.prTriageEnabled,
         decision: decisionProviderFromEnv(),
+        allowedPersonaList: repository.reviewPersonaList ?? null,
+        personaByTriage: repository.prPersonaByTriage,
         logError,
     });
     if (triage.effectiveDepth === "skip") {
@@ -222,7 +224,7 @@ const handleGitLabPullRequestWebhook: HandleGitLabPullRequestWebhook = async (
                 isInlineReview,
                 language: repository.language,
                 userPrompt: repository.userPrompt,
-                personaList: repository.reviewPersonaList ?? null,
+                personaList: triage.effectivePersonaList,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,

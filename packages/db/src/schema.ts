@@ -153,6 +153,8 @@ export const repositoryTable = sqliteTable(
         // is on do they change the review's depth or skip it. Off by default so an
         // operator can read a few days of records before trusting them.
         prTriageEnabled: integer({ mode: "boolean" }).notNull().default(false),
+        /** Let triage choose the personas per pull request, within reviewPersonaList. */
+        prPersonaByTriage: integer({ mode: "boolean" }).notNull().default(false),
         userPrompt: text(),
         /** Personas the review may take; null means every persona, which is the default. */
         reviewPersonaList: text({ mode: "json" }).$type<ReviewPersonaKey[] | null>(),
@@ -219,6 +221,11 @@ export type ActivityTriageJson = {
         filePathList: string[];
     };
     decision?: ActivityTriageDecisionJson;
+    /** Personas triage chose for this review; null is every persona the repository allows. */
+    personaList?: ReviewPersonaKey[] | null;
+    personaReason?: string;
+    /** True when the chosen personas were used; false when they were only recorded. */
+    personaApplied?: boolean;
 };
 
 export type ActivityLogEntryJson = {

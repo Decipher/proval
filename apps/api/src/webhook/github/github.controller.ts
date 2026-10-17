@@ -203,6 +203,8 @@ async function handlePullRequestWebhook(
         author: payload.pull_request?.user?.login ?? "",
         enabled: repository.prTriageEnabled,
         decision: decisionProviderFromEnv(),
+        allowedPersonaList: repository.reviewPersonaList ?? null,
+        personaByTriage: repository.prPersonaByTriage,
         logError,
     });
     if (triage.effectiveDepth === "skip") {
@@ -231,7 +233,7 @@ async function handlePullRequestWebhook(
                 isInlineReview,
                 language: repository.language,
                 userPrompt: repository.userPrompt,
-                personaList: repository.reviewPersonaList ?? null,
+                personaList: triage.effectivePersonaList,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,

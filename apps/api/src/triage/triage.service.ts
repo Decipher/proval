@@ -3,6 +3,8 @@ import type { GitProvider } from "../git-provider/types.js";
 import type { ActivityService } from "../api/activity/activity.service.js";
 import { hasVersionDelta } from "./capability.js";
 import { askDecisions, buildTriageState, TRIAGE_QUESTION_SET, type DecisionProviderConfig } from "./decision.js";
+import { selectPersonaList } from "./personas.js";
+import type { ReviewPersonaKey } from "@proval/db";
 import {
     DEFAULT_TRIAGE_SETTINGS,
     triagePullRequest,
@@ -29,6 +31,10 @@ export interface TriageForReviewInput {
     decision?: DecisionProviderConfig | null;
     /** Injected for tests; the decision call is the only network access here. */
     fetchImpl?: typeof fetch;
+    /** The repository's persona list, the ceiling for any selection; null is every persona. */
+    allowedPersonaList?: ReviewPersonaKey[] | null;
+    /** Whether the repository lets triage choose personas; otherwise the choice is only recorded. */
+    personaByTriage?: boolean;
     /**
      * Where a failure is reported. Injected rather than imported because util/log pulls
      * in the activity service and its database, which must not happen on this module's
@@ -42,6 +48,8 @@ export interface TriageForReviewResult {
     record: ActivityTriageJson;
     /** The depth to actually use: the record's when enabled, otherwise normal. */
     effectiveDepth: TriageDepth;
+    /** The personas to actually use: triage's choice when the repository lets it choose, else its list. */
+    effectivePersonaList: ReviewPersonaKey[] | null;
 }
 
 /**
@@ -162,7 +170,21 @@ export async function triageForReview(input: TriageForReviewInput): Promise<Tria
             logError,
         );
     }
-    return { record, effectiveDepth: record.applied ? record.depth : "normal" };
+    const effectiveDepth = record.applied ? record.depth : "normal";
+    const allowed = input.allowedPersonaList ?? null;
+    // Personas are chosen from the effective depth, so a recorded-only light depth does
+    // not narrow the review through the back door.
+    const selection = selectPersonaList({
+        depth: effectiveDepth,
+        rule: record.rule,
+        decision: record.decision,
+        allowedList: allowed,
+    });
+    const personaApplied = Boolean(input.enabled && input.personaByTriage);
+    record.personaList = selection.personaList;
+    record.personaReason = selection.reason;
+    record.personaApplied = personaApplied;
+    return { record, effectiveDepth, effectivePersonaList: personaApplied ? selection.personaList : allowed };
 }
 
 /**
