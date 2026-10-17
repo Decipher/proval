@@ -39,6 +39,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
         isInlineReview,
         language,
         userPrompt = null,
+        personaList = null,
         activityId,
         isFollowUpReview = false,
         previousHeadSha = null,
@@ -155,6 +156,7 @@ export const runPullRequestReview: PullRequestReview = async (params) => {
                     userPrompt,
                     agentInstructionPrompt,
                     unitStepBudget,
+                    personaList,
                 ),
             ),
         );

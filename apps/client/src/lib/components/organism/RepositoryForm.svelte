@@ -25,6 +25,7 @@
     import { openAlert, openConfirm } from "$lib/store/modal";
     import Description from "../atom/Description.svelte";
     import ToggleSwitch from "../atom/ToggleSwitch.svelte";
+    import { REVIEW_PERSONA_LIST, type ReviewPersonaKey } from "@proval/types";
     import FieldTitle from "../atom/FieldTitle.svelte";
 
     interface Config {
@@ -43,6 +44,7 @@
         prIgnoreDraft: boolean;
         prTriageEnabled: boolean;
         userPrompt: string | null;
+        reviewPersonaList: ReviewPersonaKey[] | null;
         prReplyEnabled: boolean;
         prMentionOnly: boolean;
         issueEnabled: boolean;
@@ -153,6 +155,16 @@
     let prIgnoreDraft = $state<boolean>(config.prIgnoreDraft);
     let prTriageEnabled = $state<boolean>(config.prTriageEnabled);
     let userPrompt = $state<string>(config.userPrompt ?? "");
+    // Null on the repository means every persona; the form shows that as all switches on.
+    let personaEnabled = $state<Record<ReviewPersonaKey, boolean>>(
+        Object.fromEntries(
+            REVIEW_PERSONA_LIST.map((p) => [p.key, config.reviewPersonaList === null || config.reviewPersonaList.includes(p.key)]),
+        ) as Record<ReviewPersonaKey, boolean>,
+    );
+    const enabledPersonaList = $derived(REVIEW_PERSONA_LIST.filter((p) => personaEnabled[p.key]).map((p) => p.key));
+    const personaListForSave = $derived(
+        enabledPersonaList.length === REVIEW_PERSONA_LIST.length ? null : enabledPersonaList,
+    );
     let prReplyEnabled = $state<boolean>(config.prReplyEnabled);
 
     const userPromptLength = $derived(userPrompt.length);
@@ -330,6 +342,7 @@
             prIgnoreDraft,
             prTriageEnabled,
             userPrompt: userPrompt.trim() || null,
+            reviewPersonaList: personaListForSave,
             prReplyEnabled,
             prMentionOnly,
             issueEnabled,
@@ -533,6 +546,26 @@
                 </p>
             {/snippet}
         </FormField>
+    </Card>
+
+    <Card title="Review personas" spaceY>
+        <Description>Choose which perspectives review changes in this repository. Each one is a section of the checklist the reviewers work from, so fewer personas means a narrower review, not a shorter one.</Description>
+        <div class="divide-y divide-border">
+            {#each REVIEW_PERSONA_LIST as persona (persona.key)}
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-foreground">{persona.title}</p>
+                        <Description>{persona.description}</Description>
+                    </div>
+                    <ToggleSwitch
+                        bind:checked={personaEnabled[persona.key]}
+                        disabled={personaEnabled[persona.key] && enabledPersonaList.length === 1} />
+                </div>
+            {/each}
+        </div>
+        {#if enabledPersonaList.length === 1}
+            <Description>At least one persona stays on.</Description>
+        {/if}
     </Card>
 
     <Card spaceY>

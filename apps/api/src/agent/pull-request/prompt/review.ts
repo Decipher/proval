@@ -1,3 +1,5 @@
+import { reviewPersonaKeyList, type ReviewPersonaKey } from "@proval/db";
+
 // #########################################################
 // # Inline Comment Mode
 // #########################################################
@@ -57,66 +59,93 @@ export const FILE_COVERAGE_RULE = [
 // # Review Checklist
 // #########################################################
 
-export const REVIEW_CHECKLIST = [
+const REVIEW_CHECKLIST_HEADER = [
     "# What to Review",
     "",
     "Analyze changed files and diffs against this checklist. Only report problems evidenced by the diff or by files you read to validate a specific concern — never fabricate.",
     "Do not force a finding for every checklist row. Important, evidenced items only.",
     "When you report a problem, cite the exact file path and line that shows it.",
-    "",
-    "Correctness",
-    "  - Logic errors, off-by-one mistakes, wrong operator, incorrect condition",
-    "  - Missing return statements or unreachable code",
-    "  - Incorrect use of APIs, libraries, or framework conventions",
-    "  - Broken control flow (e.g., missing break in switch, fall-through without comment)",
-    "",
-    "Security",
-    "  - SQL / NoSQL injection, XSS, command injection, path traversal",
-    "  - Hardcoded secrets, API keys, or credentials",
-    "  - Missing authentication or authorization checks",
-    "  - Sensitive data exposure in logs, errors, or API responses",
-    "  - Unsafe deserialization or eval usage",
-    "",
-    "Performance",
-    "  - N+1 queries or unnecessary database round-trips",
-    "  - Unbounded loops, missing pagination, or large in-memory collections",
-    "  - Unnecessary allocations or copies in hot paths",
-    "  - Missing caching where appropriate",
-    "  - Blocking operations in async contexts",
-    "",
-    "Error Handling",
-    "  - Swallowed or silently ignored errors",
-    "  - Failures that are neither handled nor propagated anywhere on the call path, leaving incorrect results or silent breakage (local try/catch absence alone is not a bug if callers, callees, or shared layers handle it)",
-    "  - Generic catch blocks that hide root causes",
-    "  - Missing validation of external input (user input, API responses, environment variables)",
-    "",
-    "Type Safety & Null Handling",
-    "  - Unsafe type casts or `any` usage that could be narrowed",
-    "  - Potential null/undefined dereference",
-    "  - Missing type annotations on public API boundaries",
-    "",
-    "Design & Maintainability",
-    "  - DRY violations: duplicated logic that should be extracted",
-    "  - Single Responsibility: functions or classes doing too many things",
-    "  - Naming: misleading variable/function names, inconsistent conventions",
-    "  - Readability: overly complex expressions, deeply nested code that could be simplified",
-    "  - Abstraction: missing interfaces or unnecessary coupling between modules",
-    "",
-    "API & Contract",
-    "  - Breaking changes to public APIs, exported types, or database schemas",
-    "  - Missing or inconsistent error response shapes",
-    "  - Version compatibility or migration concerns",
-    "",
-    "Concurrency",
-    "  - Race conditions in shared mutable state",
-    "  - Missing locks, atomic operations, or transaction boundaries",
-    "  - Incorrect Promise handling (fire-and-forget without error handling, unhandled rejections)",
-    "",
-    "Testing",
-    "  - New logic paths that lack corresponding tests",
-    "  - Tests that do not assert meaningful behavior",
-    "  - Flaky test patterns (time-dependent, order-dependent, external service calls)",
 ].join("\n");
+
+/** One checklist section per review persona, in the order they are presented. */
+const REVIEW_CHECKLIST_SECTION: Record<ReviewPersonaKey, string> = {
+    correctness: [
+        "Correctness",
+        "  - Logic errors, off-by-one mistakes, wrong operator, incorrect condition",
+        "  - Missing return statements or unreachable code",
+        "  - Incorrect use of APIs, libraries, or framework conventions",
+        "  - Broken control flow (e.g., missing break in switch, fall-through without comment)",
+    ].join("\n"),
+    security: [
+        "Security",
+        "  - SQL / NoSQL injection, XSS, command injection, path traversal",
+        "  - Hardcoded secrets, API keys, or credentials",
+        "  - Missing authentication or authorization checks",
+        "  - Sensitive data exposure in logs, errors, or API responses",
+        "  - Unsafe deserialization or eval usage",
+    ].join("\n"),
+    performance: [
+        "Performance",
+        "  - N+1 queries or unnecessary database round-trips",
+        "  - Unbounded loops, missing pagination, or large in-memory collections",
+        "  - Unnecessary allocations or copies in hot paths",
+        "  - Missing caching where appropriate",
+        "  - Blocking operations in async contexts",
+    ].join("\n"),
+    "error-handling": [
+        "Error Handling",
+        "  - Swallowed or silently ignored errors",
+        "  - Failures that are neither handled nor propagated anywhere on the call path, leaving incorrect results or silent breakage (local try/catch absence alone is not a bug if callers, callees, or shared layers handle it)",
+        "  - Generic catch blocks that hide root causes",
+        "  - Missing validation of external input (user input, API responses, environment variables)",
+    ].join("\n"),
+    "type-safety": [
+        "Type Safety & Null Handling",
+        "  - Unsafe type casts or `any` usage that could be narrowed",
+        "  - Potential null/undefined dereference",
+        "  - Missing type annotations on public API boundaries",
+    ].join("\n"),
+    design: [
+        "Design & Maintainability",
+        "  - DRY violations: duplicated logic that should be extracted",
+        "  - Single Responsibility: functions or classes doing too many things",
+        "  - Naming: misleading variable/function names, inconsistent conventions",
+        "  - Readability: overly complex expressions, deeply nested code that could be simplified",
+        "  - Abstraction: missing interfaces or unnecessary coupling between modules",
+    ].join("\n"),
+    "api-contract": [
+        "API & Contract",
+        "  - Breaking changes to public APIs, exported types, or database schemas",
+        "  - Missing or inconsistent error response shapes",
+        "  - Version compatibility or migration concerns",
+    ].join("\n"),
+    concurrency: [
+        "Concurrency",
+        "  - Race conditions in shared mutable state",
+        "  - Missing locks, atomic operations, or transaction boundaries",
+        "  - Incorrect Promise handling (fire-and-forget without error handling, unhandled rejections)",
+    ].join("\n"),
+    testing: [
+        "Testing",
+        "  - New logic paths that lack corresponding tests",
+        "  - Tests that do not assert meaningful behavior",
+        "  - Flaky test patterns (time-dependent, order-dependent, external service calls)",
+    ].join("\n"),
+};
+
+/**
+ * The checklist for a review, built from the personas it may take. Null means every
+ * persona, in the fixed order above, which is byte for byte the checklist before
+ * personas existed. A subset keeps that order and drops the other sections, so the
+ * sub agents look for fewer things rather than more.
+ */
+export function buildReviewChecklist(personaList: readonly ReviewPersonaKey[] | null): string {
+    const enabled =
+        personaList === null ? reviewPersonaKeyList : reviewPersonaKeyList.filter((key) => personaList.includes(key));
+    return [REVIEW_CHECKLIST_HEADER, ...enabled.map((key) => REVIEW_CHECKLIST_SECTION[key])].join("\n\n");
+}
+
+export const REVIEW_CHECKLIST = buildReviewChecklist(null);
 
 // const REVIEW_EVIDENCE_RULES = [
 //     "# Evidence Rules",

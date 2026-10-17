@@ -16,6 +16,7 @@ import type { GitProvider } from "../../git-provider/types.js";
 import { logError } from "../../util/log.js";
 import { decrypt, encrypt } from "../../util/encrypt.js";
 import { reasoningEffortValueList, USER_PROMPT_MAX_LENGTH } from "@proval/types";
+import { isReviewPersonaKey, type ReviewPersonaKey } from "@proval/db";
 import type {
     ReasoningEffort,
     Repository,
@@ -78,6 +79,9 @@ export class RepositoryService {
     public async create(data: RepositoryInsert): Promise<RepositoryResponse> {
         if (Object.hasOwn(data, "userPrompt")) {
             data.userPrompt = this.normalizeUserPrompt(data.userPrompt);
+        }
+        if (Object.hasOwn(data, "reviewPersonaList")) {
+            data.reviewPersonaList = this.normalizeReviewPersonaList(data.reviewPersonaList);
         }
 
         if (Object.hasOwn(data, "reasoningEffort")) {
@@ -158,6 +162,9 @@ export class RepositoryService {
         const cleanData = this.removeUndefined(data);
         if (Object.hasOwn(cleanData, "userPrompt")) {
             cleanData.userPrompt = this.normalizeUserPrompt(cleanData.userPrompt);
+        }
+        if (Object.hasOwn(cleanData, "reviewPersonaList")) {
+            cleanData.reviewPersonaList = this.normalizeReviewPersonaList(cleanData.reviewPersonaList);
         }
         if (Object.hasOwn(cleanData, "reasoningEffort")) {
             cleanData.reasoningEffort = this.normalizeReasoningEffort(cleanData.reasoningEffort);
@@ -462,6 +469,28 @@ export class RepositoryService {
             throw new Error(`Custom instructions must be at most ${USER_PROMPT_MAX_LENGTH} characters`);
         }
         return trimmed;
+    }
+
+    /**
+     * Null means every persona. A list must name known personas and at least one of
+     * them, since a review with nothing to look for is a mistake, not a setting.
+     */
+    private normalizeReviewPersonaList(value: unknown): ReviewPersonaKey[] | null {
+        if (value == null) {
+            return null;
+        }
+        if (!Array.isArray(value)) {
+            throw new Error("Review personas must be a list");
+        }
+        const list = Array.from(new Set(value));
+        const unknown = list.filter((key) => !isReviewPersonaKey(key));
+        if (unknown.length > 0) {
+            throw new Error(`Unknown review persona: ${unknown.map(String).join(", ")}`);
+        }
+        if (list.length === 0) {
+            throw new Error("At least one review persona must stay enabled");
+        }
+        return list as ReviewPersonaKey[];
     }
 
     private removeUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {

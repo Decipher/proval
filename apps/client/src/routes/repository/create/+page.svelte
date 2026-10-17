@@ -185,6 +185,7 @@
                     prIgnoreDraft: true,
                     prTriageEnabled: false,
                     userPrompt: null,
+                    reviewPersonaList: null,
                     prReplyEnabled: true,
                     prMentionOnly: false,
                     issueEnabled: true,
