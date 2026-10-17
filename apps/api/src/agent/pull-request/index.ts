@@ -4,6 +4,7 @@ import type { Workspace } from "../../git-provider/workspace.js";
 import type { ActivityTokenUsage } from "@proval/types";
 import type { ReviewHandoff } from "./review/handoff.schema.js";
 import type { ReviewUnit } from "./review/plan.schema.js";
+import type { ReviewPersonaKey } from "@proval/db";
 
 type PullRequestReviewParams = {
     provider: GitProvider;
@@ -13,6 +14,8 @@ type PullRequestReviewParams = {
     isInlineReview: boolean;
     language: string;
     userPrompt?: string | null;
+    /** Personas the review may take; null is every persona. */
+    personaList?: ReviewPersonaKey[] | null;
     activityId: number;
     isFollowUpReview?: boolean;
     /** Head SHA of the last completed Proval review on this PR (follow-up compare base). */

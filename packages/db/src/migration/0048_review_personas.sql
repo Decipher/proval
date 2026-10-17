@@ -1,0 +1,1 @@
+ALTER TABLE `repository` ADD `review_persona_list` text;

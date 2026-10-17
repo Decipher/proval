@@ -55,6 +55,8 @@ export type {
 } from "./database.js";
 export { USER_PROMPT_MAX_LENGTH } from "./user-prompt.js";
 export { reasoningEffortValueList } from "./database.js";
+export { REVIEW_PERSONA_LIST, reviewPersonaKeyList, isReviewPersonaKey } from "@proval/db";
+export type { ReviewPersonaKey } from "@proval/db";
 export type { Pagination } from "./pagination.js";
 export type {
     DashboardRange,

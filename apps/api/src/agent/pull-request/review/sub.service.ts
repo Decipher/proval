@@ -10,7 +10,8 @@ import {
     REVIEW_SUB_AGENT_HANDOFF_FIELDS,
 } from "./sub.prompt.js";
 import { FOLLOW_UP_PUSH_SUB_HINT } from "./follow-up.prompt.js";
-import { REVIEW_CHECKLIST } from "../prompt";
+import { buildReviewChecklist } from "../prompt";
+import type { ReviewPersonaKey } from "@proval/db";
 import { getFileDiffTool, getPushFileDiffTool, submitReviewHandoffTool } from "../tool";
 import { getFileContentTool, globTool, grepTool, listDirectoryTool } from "../../shared/tool";
 import { runAgentLoop } from "../../llm/loop";
@@ -31,12 +32,13 @@ export async function runReviewSubAgent(
     usePushScope = false,
     userPrompt: string | null = null,
     agentInstructionPrompt = "",
+    personaList: ReviewPersonaKey[] | null = null,
 ): Promise<ActivityTokenUsage & { handoff: ReviewHandoff }> {
     const system = [
         REVIEW_SUB_AGENT_BODY,
         REVIEW_SUB_AGENT_HANDOFF_FIELDS,
         usePushScope ? FOLLOW_UP_PUSH_SUB_HINT : null,
-        REVIEW_CHECKLIST,
+        buildReviewChecklist(personaList),
         agentInstructionPrompt,
         generateUserPrompt(PR_REVIEW_SUB_USER_PROMPT_HEADER, userPrompt),
     ]

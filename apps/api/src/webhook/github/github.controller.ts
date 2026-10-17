@@ -210,6 +210,7 @@ async function handlePullRequestWebhook(
                 isInlineReview,
                 language: repository.language,
                 userPrompt: repository.userPrompt,
+                personaList: repository.reviewPersonaList ?? null,
                 activityId,
                 isFollowUpReview,
                 previousHeadSha: isFollowUpReview ? lastHeadSha : null,

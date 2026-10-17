@@ -184,6 +184,7 @@
                     prReviewOnPush: "on_every_push",
                     prIgnoreDraft: true,
                     userPrompt: null,
+                    reviewPersonaList: null,
                     prReplyEnabled: true,
                     prMentionOnly: false,
                     issueEnabled: true,

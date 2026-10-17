@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
+import type { ReviewPersonaKey } from "./review-persona.js";
 import { sql } from "drizzle-orm";
 
 const timeStamp = {
@@ -149,6 +150,8 @@ export const repositoryTable = sqliteTable(
             .default("on_every_push"),
         prIgnoreDraft: integer({ mode: "boolean" }).notNull().default(true),
         userPrompt: text(),
+        /** Personas the review may take; null means every persona, which is the default. */
+        reviewPersonaList: text({ mode: "json" }).$type<ReviewPersonaKey[] | null>(),
 
         // Pull Request Reply
         prReplyEnabled: integer({ mode: "boolean" }).notNull().default(true),

@@ -121,6 +121,7 @@
             prReviewOnPush: data.repository.prReviewOnPush,
             prIgnoreDraft: data.repository.prIgnoreDraft,
             userPrompt: data.repository.userPrompt,
+            reviewPersonaList: data.repository.reviewPersonaList ?? null,
             prReplyEnabled: data.repository.prReplyEnabled,
             prMentionOnly: data.repository.prMentionOnly,
             issueEnabled: data.repository.issueEnabled,

@@ -109,6 +109,7 @@ function makeRepositoryRow(overrides: Partial<Repository> = {}): Repository {
         prReviewOnPush: "on_every_push",
         prIgnoreDraft: true,
         userPrompt: null,
+    reviewPersonaList: null,
         prReplyEnabled: true,
         prMentionOnly: false,
         issueEnabled: true,
