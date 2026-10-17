@@ -9,8 +9,8 @@ import type { TriageDepth } from "./rules.js";
  * review (docs, tests, a small or rebased delta) takes the one or two personas that
  * can still find something in that kind of change; a normal review takes everything
  * the repository allows, unless a confident decision about the risk area says a
- * narrower set covers it. A confident "needs a full review" answer wins over all of
- * that. A selection that would leave nothing falls back to the repository's list,
+ * narrower set covers it. A very confident "needs a full review" answer keeps a
+ * normal review at the full set. A selection that would leave nothing falls back to the repository's list,
  * because a review with nothing to look for is never the right outcome.
  */
 export interface PersonaSelectionInput {
@@ -29,8 +29,14 @@ export interface PersonaSelection {
 
 /** Confidence a choice answer needs before it narrows a normal review. */
 export const RISK_AREA_CONFIDENCE_FLOOR = 0.6;
-/** Probability above which "needs a full review" overrides every narrowing. */
-export const NEEDS_FULL_REVIEW_FLOOR = 0.7;
+/**
+ * Probability above which "needs a full review" overrides the risk area narrowing of
+ * a normal review. It does not override a light depth: the rules that set light
+ * (docs only, tests only, a small or rebased delta) read the actual change, and the
+ * first day of answers put this score at 0.79 or higher on nearly every pull
+ * request, documentation included, which would have switched personas off entirely.
+ */
+export const NEEDS_FULL_REVIEW_FLOOR = 0.9;
 
 const LIGHT_BY_RULE: Record<string, ReviewPersonaKey[]> = {
     "docs-only": ["correctness"],
@@ -63,6 +69,11 @@ export function selectPersonaList(input: PersonaSelectionInput): PersonaSelectio
         return { personaList: [], reason: "skipped, nothing to review" };
     }
 
+    if (input.depth === "light") {
+        const wanted = LIGHT_BY_RULE[input.rule] ?? LIGHT_DEFAULT;
+        return narrow(wanted, `light review (${input.rule})`);
+    }
+
     const answers = input.decision?.answers ?? {};
     const needsFull = answers.needs_full_review;
     if (needsFull?.type === "noul" && needsFull.value >= NEEDS_FULL_REVIEW_FLOOR) {
@@ -70,11 +81,6 @@ export function selectPersonaList(input: PersonaSelectionInput): PersonaSelectio
             personaList: input.allowedList,
             reason: `decision: needs a full review (${needsFull.value.toFixed(2)}), every enabled persona`,
         };
-    }
-
-    if (input.depth === "light") {
-        const wanted = LIGHT_BY_RULE[input.rule] ?? LIGHT_DEFAULT;
-        return narrow(wanted, `light review (${input.rule})`);
     }
 
     const risk = answers.risk_area;

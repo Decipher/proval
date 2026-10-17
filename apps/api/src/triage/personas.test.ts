@@ -66,15 +66,38 @@ describe("selectPersonaList", () => {
         expect(code.personaList).toEqual(["security"]);
     });
 
-    test("needs a full review overrides narrowing of any kind", () => {
+    test("needs a full review keeps a normal review at the full set only when very confident", () => {
+        const sure = selectPersonaList({
+            depth: "normal",
+            rule: "default",
+            allowedList: null,
+            decision: decision({
+                needs_full_review: { type: "noul", value: 0.95 },
+                risk_area: { type: "choice", value: "docs", confidence: 1 },
+            }),
+        });
+        expect(sure.personaList).toBeNull();
+        expect(sure.reason).toContain("needs a full review");
+        const usual = selectPersonaList({
+            depth: "normal",
+            rule: "default",
+            allowedList: null,
+            decision: decision({
+                needs_full_review: { type: "noul", value: 0.85 },
+                risk_area: { type: "choice", value: "docs", confidence: 1 },
+            }),
+        });
+        expect(usual.personaList).toEqual(["correctness"]);
+    });
+
+    test("a light depth set by the rules is never widened by the decision provider", () => {
         const picked = selectPersonaList({
             depth: "light",
             rule: "docs-only",
             allowedList: null,
-            decision: decision({ needs_full_review: { type: "noul", value: 0.8 } }),
+            decision: decision({ needs_full_review: { type: "noul", value: 0.99 } }),
         });
-        expect(picked.personaList).toBeNull();
-        expect(picked.reason).toContain("needs a full review");
+        expect(picked.personaList).toEqual(["correctness"]);
     });
 
     test("a skipped review has no personas", () => {
